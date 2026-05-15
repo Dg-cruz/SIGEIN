@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Request, Depends
+﻿from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_current_user
-from fastapi.templating import Jinja2Templates
+from templating import templates
 import models
 from datetime import timezone, timedelta
 import pytz
@@ -16,7 +16,7 @@ from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 
 router = APIRouter(prefix="/logs", tags=["Logs"])
-templates = Jinja2Templates(directory="templates")  # certifique-se que a pasta existe
+
 
 @router.get("/")
 def listar_logs(request: Request, db: Session = Depends(get_db),

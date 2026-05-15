@@ -1,16 +1,13 @@
-from fastapi import APIRouter, Request, Form, Depends
+﻿from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse
 from starlette.status import HTTP_302_FOUND
 from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_current_user, registrar_log
 from models import Equipment, EquipmentType, Brand, EquipmentState, Unit, Product
-from fastapi.templating import Jinja2Templates
+from templating import templates
 
 router = APIRouter(prefix="/equipment", tags=["Equipment"])
-templates = Jinja2Templates(directory="templates")
-
-# ============================
 # Listar equipamentos
 # ============================
 @router.get("/")

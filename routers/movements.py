@@ -1,6 +1,6 @@
-from fastapi.responses import RedirectResponse, JSONResponse
+﻿from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi import APIRouter, Request, Form, Depends
-from fastapi.templating import Jinja2Templates
+from templating import templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import Product, Unit, Category, Movement, User, Stock, Item
@@ -14,10 +14,6 @@ from typing import Optional
 from routers import products
 
 router = APIRouter(prefix="/movements", tags=["Movimentações"])
-templates = Jinja2Templates(directory="templates")
-
-
-# -------------------------------
 # LISTAR MOVIMENTAÇÕES
 # -------------------------------
 @router.get("/")

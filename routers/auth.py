@@ -1,20 +1,38 @@
+﻿import hashlib
+import re
+
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
+from templating import templates
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_302_FOUND
 from database import get_db
 import models
 from dependencies import registrar_log
-from security import verify_password  # ✅ Nosso módulo de hash seguro
+from security import verify_password
 from models import StatusUsuarioEnum
 
-
-
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
-# ✅ ADICIONE ESTA ROTA (GET) - Exibe o formulário de login
+
+def _hash_senha(senha: str) -> str:
+    return hashlib.sha256(senha.encode()).hexdigest()
+
+
+def _senha_confere(senha_digitada: str, senha_armazenada: str) -> bool:
+    if not senha_armazenada:
+        return False
+    try:
+        if verify_password(senha_digitada, senha_armazenada):
+            return True
+    except (ValueError, TypeError):
+        pass
+    if senha_digitada == senha_armazenada:
+        return True
+    return _hash_senha(senha_digitada) == senha_armazenada
+
+
 @router.get("/login")
 def login_form(request: Request):
     """Exibe o formulário de login"""
@@ -26,56 +44,63 @@ def login_post(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """Processa login do usuário com hash seguro e status Enum/string"""
+    """Processa login do usuário (e-mail ou CPF + senha bcrypt ou legado SHA256)"""
     ip = request.client.host
+    login = username.strip()
+    cpf = re.sub(r"\D", "", login)
 
-    # Busca usuário no banco pelo e-mail
-    user = db.query(models.User).filter(models.User.email == username).first()
+    user = db.query(models.User).filter(
+        or_(
+            models.User.email == login,
+            models.User.cpf == cpf,
+        )
+    ).first()
 
-    # ❌ Usuário não existe ou senha incorreta
-    if not user or not verify_password(password, user.password):
-        registrar_log(db, usuario=username, acao="Tentativa de login falhou", ip=ip)
+    if not user or not _senha_confere(password, user.password):
+        registrar_log(db, usuario=login, acao="Tentativa de login falhou", ip=ip)
         return templates.TemplateResponse(
             "login.html",
-            {"request": request, "error": "Usuário ou senha inválidos"}
+            {"request": request, "error": "Usuário ou senha inválidos"},
         )
 
-    # ✅ Converte status do usuário para Enum se estiver usando Enum
     try:
-        status = StatusUsuarioEnum(user.status)  # se user.status já for string do DB
+        status = (
+            user.status
+            if isinstance(user.status, StatusUsuarioEnum)
+            else StatusUsuarioEnum(user.status)
+        )
     except ValueError:
-        status = user.status  # fallback: mantém a string original
+        status = user.status
 
-    # ❌ Bloqueia login se status não for ativo
     if isinstance(status, StatusUsuarioEnum):
         is_ativo = status == StatusUsuarioEnum.ATIVO
         status_str = status.value
     else:
-        # Caso seja string, compara ignorando maiúsculas/minúsculas
         is_ativo = str(status).lower() == "ativo"
         status_str = str(status)
 
     if not is_ativo:
-        registrar_log(db, usuario=username, acao=f"Login negado - status: {status_str}", ip=ip)
+        registrar_log(db, usuario=login, acao=f"Login negado - status: {status_str}", ip=ip)
         return templates.TemplateResponse(
             "login.html",
             {
                 "request": request,
-                "error": f"Usuário {status_str}. Entre em contato com o administrador."
-            }
+                "error": f"Usuário {status_str}. Entre em contato com o administrador.",
+            },
         )
 
-    # ✅ Login bem-sucedido - salva dados na sessão
     request.session["user"] = user.email
     request.session["user_id"] = user.id
+    request.session["user_nome"] = user.nome
     request.session["municipio_id"] = user.municipio_id
-    request.session["perfil"] = user.perfil.value if hasattr(user.perfil, "value") else str(user.perfil)
+    request.session["perfil"] = (
+        user.perfil.value if hasattr(user.perfil, "value") else str(user.perfil)
+    )
 
-    registrar_log(db, usuario=username, acao="Login bem-sucedido", ip=ip)
+    registrar_log(db, usuario=user.email, acao="Login bem-sucedido", ip=ip)
 
-    # Redireciona para dashboard
     return RedirectResponse(url="/dashboard", status_code=HTTP_302_FOUND)
 
 
@@ -83,14 +108,11 @@ def login_post(
 def logout(request: Request, db: Session = Depends(get_db)):
     """Efetua logout do usuário"""
     ip = request.client.host
-    
-    # Registra logout antes de limpar sessão
+
     usuario = request.session.get("user")
     if usuario:
         registrar_log(db, usuario=usuario, acao="Logout efetuado", ip=ip)
-    
-    # ✅ Limpa a sessão do SessionMiddleware
+
     request.session.clear()
-    
-    response = RedirectResponse(url="/login", status_code=HTTP_302_FOUND)
-    return response
+
+    return RedirectResponse(url="/login", status_code=HTTP_302_FOUND)

@@ -1,13 +1,10 @@
-from fastapi import Request, Depends
-from fastapi.templating import Jinja2Templates
+﻿from fastapi import Request, Depends
+from templating import templates
 from database import get_db
 from sqlalchemy.orm import Session
 from datetime import datetime
 import models
 
-templates = Jinja2Templates(directory="templates")
-
-# ❌ REMOVIDO - Não usamos mais dict em memória
 # sessions = {}
 
 

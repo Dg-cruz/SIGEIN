@@ -1,15 +1,11 @@
-from fastapi import APIRouter, Request, Depends
+﻿from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_current_user
-from fastapi.templating import Jinja2Templates
+from templating import templates
 
 router = APIRouter(prefix="/eprotocolo", tags=["E-Protocolo"])
-templates = Jinja2Templates(directory="templates")
-
-
-# ========================================
 # DASHBOARD PRINCIPAL
 # ========================================
 @router.get("/")

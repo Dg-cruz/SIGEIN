@@ -1,17 +1,13 @@
-from fastapi import APIRouter, Request, Form, Depends
+﻿from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse
 from starlette.status import HTTP_302_FOUND
 from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_current_user, registrar_log
 from models import Unit
-from fastapi.templating import Jinja2Templates
+from templating import templates
 
 router = APIRouter(prefix="/units", tags=["Units"])
-templates = Jinja2Templates(directory="templates")
-
-
-# LISTAR UNIDADES
 @router.get("/")
 def list_units(request: Request, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
     if not user:

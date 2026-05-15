@@ -1,18 +1,14 @@
-from fastapi import APIRouter, Request, Form, Depends
+﻿from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse
 from starlette.status import HTTP_302_FOUND
 from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_current_user, registrar_log
 from models import EquipmentType  # Modelo correspondente
-from fastapi.templating import Jinja2Templates
+from templating import templates
 
 # Cria o roteador para Tipos de Equipamentos
 router = APIRouter(prefix="/equipment-types", tags=["Equipment Types"])
-templates = Jinja2Templates(directory="templates")
-
-
-# ============================================================
 # LISTAR TIPOS DE EQUIPAMENTOS
 # ------------------------------------------------------------
 # Exibe uma tabela com todos os tipos de equipamentos cadastrados.

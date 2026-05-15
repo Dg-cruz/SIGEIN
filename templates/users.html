@@ -94,6 +94,9 @@
                         <option value="gestor_estoque" {% if user and user.perfil == 'gestor_estoque' %}selected{% endif %}>
                             GESTOR DE ESTOQUE - Gerencia Inventário
                         </option>
+                        <option value="gestor_segem" {% if user and user.perfil == 'gestor_segem' %}selected{% endif %}>
+                            GESTOR SEGEM - Gerencia Inventário (SEGEM)
+                        </option>
                         <option value="gestor_protocolo" {% if user and user.perfil == 'gestor_protocolo' %}selected{% endif %}>
                             GESTOR DE PROTOCOLO - Gerencia E-Protocolo
                         </option>
@@ -448,6 +451,7 @@ function mostrarDescricaoPerfil() {
         'master': '✅ Acesso total ao sistema | Gerencia múltiplos municípios | Configurações globais',
         'admin_municipal': '✅ Acesso total ao município | Gerencia usuários | Inventário + Protocolo completo',
         'gestor_estoque': '✅ Acesso total ao inventário do órgão | Gera relatórios | NÃO acessa protocolo',
+        'gestor_segem': '✅ Acesso ao inventário (SEGEM) | Gera relatórios | NÃO acessa protocolo',
         'gestor_protocolo': '✅ Acesso total ao protocolo | Cria e tramita processos | NÃO acessa inventário',
         'gestor_geral': '✅ Combina Estoque + Protocolo | Visão 360° do órgão | NÃO gerencia usuários',
         'operador': '⚠️ Acesso básico | Consulta e ações limitadas | Não pode criar/editar/excluir'

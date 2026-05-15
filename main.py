@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
+from templating import templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware  # ✅ Import no topo
 from middleware import MultiTenantMiddleware
@@ -35,14 +35,8 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ========================================
-# 4. TEMPLATES
+# 4. TEMPLATES (instância única em templating.py)
 # ========================================
-templates = Jinja2Templates(directory="templates")
-
-def get_logged_user(request: Request):
-    return request.session.get("user")
-
-templates.env.globals["get_logged_user"] = get_logged_user
 app.state.templates = templates
 
 # ========================================

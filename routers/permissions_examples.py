@@ -1,4 +1,4 @@
-# EXEMPLOS DE USO DO SISTEMA DE PERMISSÕES
+﻿# EXEMPLOS DE USO DO SISTEMA DE PERMISSÕES
 
 """
 Este arquivo mostra como usar os decorators e dependencies de permissão
@@ -6,7 +6,7 @@ nas rotas do sistema.
 """
 
 from fastapi import APIRouter, Request, Depends
-from fastapi.templating import Jinja2Templates
+from templating import templates
 from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_current_user
@@ -22,10 +22,6 @@ from permissions import (
 from models import User, Product
 
 router = APIRouter(prefix="/products", tags=["Products"])
-templates = Jinja2Templates(directory="templates")
-
-
-# ========================================
 # EXEMPLO 1: Usando Decorator @requer_permissao
 # ========================================
 

@@ -1,8 +1,7 @@
-# utils.py
+﻿# utils.py
 from fastapi import Request
-from fastapi.templating import Jinja2Templates
+from templating import templates
 
-templates = Jinja2Templates(directory="templates")
 sessions = {}
 
 def get_logged_user(request: Request):

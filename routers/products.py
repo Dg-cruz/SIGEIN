@@ -1,17 +1,14 @@
-from fastapi import APIRouter, Request, Form, Depends
+﻿from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.status import HTTP_302_FOUND
 from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_current_user, registrar_log
 from models import Product, EquipmentType, Brand, Category, EquipmentState, Unit, Item, Movement, Stock
-from fastapi.templating import Jinja2Templates
+from templating import templates
 from datetime import datetime
 
 router = APIRouter(prefix="/products", tags=["Products"])
-templates = Jinja2Templates(directory="templates")
-
-# ----------------- LIST -----------------
 @router.get("/")
 def list_products(request: Request, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
     if not user:

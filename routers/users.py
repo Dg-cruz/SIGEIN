@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
+﻿from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from fastapi.templating import Jinja2Templates
+from templating import templates
 from starlette.status import HTTP_302_FOUND
 from database import get_db
 from dependencies import get_current_user, registrar_log
@@ -11,10 +11,6 @@ import re
 import hashlib
 
 router = APIRouter(prefix="/users", tags=["Users"])
-templates = Jinja2Templates(directory="templates")
-
-
-# ========================================
 # HELPERS
 # ========================================
 
@@ -193,9 +189,8 @@ def add_user(
         unidade_id=unidade_id,
         perfil=perfil,
         status=status,
-        created_by=user_obj.id
-)
-
+        created_by=user_obj.id,
+    )
     db.add(novo_usuario)
     db.commit()
 
@@ -342,8 +337,7 @@ def edit_user(
     user.unidade_id = unidade_id
     user.perfil = perfil
     user.status = status
-    user.email = email.split('@')[0]
-    
+
     # ✅ Atualiza senha apenas se fornecida
     if senha:
         user.password = hash_senha(senha)
