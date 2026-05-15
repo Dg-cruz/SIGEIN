@@ -8,7 +8,7 @@ from services.audit_service import AuditService
 from database import get_db
 from dependencies import get_current_user, registrar_log
 from models import EquipmentType, Stock, Product, Unit, Unidade, Item
-from shared_templates import templates
+from templating import templates
 
 router = APIRouter(prefix="/stock", tags=["Stock"])
 

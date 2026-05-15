@@ -5,7 +5,7 @@ from starlette.status import HTTP_302_FOUND
 from database import get_db
 from dependencies import get_current_user, registrar_log
 from models import User, Municipio, Orgao, Unidade
-from shared_templates import templates
+from templating import templates
 from typing import Optional
 import re
 import hashlib

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import get_current_user, registrar_log
 from models import EquipmentState
-from shared_templates import templates
+from templating import templates
 
 router = APIRouter(prefix="/states", tags=["States"])
 

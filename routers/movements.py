@@ -10,7 +10,7 @@ from datetime import datetime
 from dependencies import get_current_user, registrar_log
 from starlette.status import HTTP_302_FOUND
 from typing import Optional
-from shared_templates import templates
+from templating import templates
 
 from routers import products
 

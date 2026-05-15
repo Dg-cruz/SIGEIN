@@ -6,7 +6,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 from database import get_db
 from dependencies import get_current_user
-from shared_templates import templates
+from templating import templates
 from models import Estado, Municipio, User, Processo, ProcessoAssinante, Tramite, Orgao, Unidade, Grupo, Assunto, Subassunto
 from datetime import datetime
 

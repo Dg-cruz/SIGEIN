@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
+from templating import templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware  # ✅ Import no topo
 from middleware import MultiTenantMiddleware
@@ -35,9 +35,8 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ========================================
-# 4. TEMPLATES (compartilhados; nome do usuário no layout)
+# 4. TEMPLATES (instância única em templating.py)
 # ========================================
-from shared_templates import templates
 app.state.templates = templates
 
 # ========================================

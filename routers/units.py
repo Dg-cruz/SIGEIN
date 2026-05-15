@@ -14,7 +14,7 @@ from models import (
     Municipio,      # ✅ Para relacionamentos
     Estado          # ✅ Para relacionamentos
 )
-from shared_templates import templates
+from templating import templates
 
 router = APIRouter(prefix="/units", tags=["Unidades Administrativas"])
 

@@ -8,7 +8,7 @@ from models import (
     Product, EquipmentType, Brand, Category, EquipmentState,
     Item, Movement, Stock, User, Unidade, Orgao, Municipio, Estado,
 )
-from shared_templates import templates
+from templating import templates
 from datetime import datetime
 
 router = APIRouter(prefix="/products", tags=["Products"])

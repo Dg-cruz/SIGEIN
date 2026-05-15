@@ -5,10 +5,25 @@ from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
 from dependencies import get_current_user, registrar_log
-from models import User, SegemItem, SegemItemProduto, Unidade, ProdutoSegem
-from shared_templates import templates
+from models import User, SegemItem, SegemItemProduto, Unidade, ProdutoSegem, PerfilEnum
+from templating import templates
 
 router = APIRouter(prefix="/segem", tags=["SEGEM"])
+
+PERFIS_SEGEM = {PerfilEnum.MASTER.value, PerfilEnum.GESTOR_SEGEM.value}
+
+
+def _perfil_valor(user_obj: User) -> str:
+    p = user_obj.perfil
+    return p.value if hasattr(p, "value") else str(p)
+
+
+def _pode_acessar_segem(user_obj: User | None) -> bool:
+    return bool(user_obj and _perfil_valor(user_obj) in PERFIS_SEGEM)
+
+
+def _is_master(user_obj: User) -> bool:
+    return _perfil_valor(user_obj) == PerfilEnum.MASTER.value
 
 
 def _user_obj(db: Session, user: str):
@@ -19,7 +34,7 @@ def _user_obj(db: Session, user: str):
 
 def _query_segem(db: Session, user_obj: User):
     q = db.query(SegemItem)
-    if user_obj.perfil != "master":
+    if not _is_master(user_obj):
         q = q.filter(SegemItem.municipio_id == user_obj.municipio_id)
     return q.order_by(SegemItem.id.desc())
 
@@ -125,7 +140,7 @@ def segem_produtos_list(
     if not user:
         return JSONResponse({"error": "Não autenticado"}, status_code=401)
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return JSONResponse({"error": "Sem permissão"}, status_code=403)
     produtos = db.query(ProdutoSegem).order_by(ProdutoSegem.codigo).all()
     return JSONResponse([{"codigo": p.codigo or "", "descricao": p.descricao or ""} for p in produtos])
@@ -141,7 +156,7 @@ def segem_produtos_busca(
     if not user:
         return JSONResponse({"error": "Não autenticado"}, status_code=401)
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return JSONResponse({"error": "Sem permissão"}, status_code=403)
     codigo = (codigo or "").strip()
     if not codigo:
@@ -162,7 +177,7 @@ def segem_proximo_tombo(
     if not user:
         return JSONResponse({"error": "Não autenticado"}, status_code=401)
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return JSONResponse({"error": "Sem permissão"}, status_code=403)
     lista_atuais = [x.strip() for x in (atuais or "").split(",") if x.strip()]
     proximo = _proximo_tombo(db, atuais=lista_atuais)
@@ -182,7 +197,7 @@ def segem_home(
     if not user_obj:
         return RedirectResponse("/login")
 
-    if user_obj.perfil not in ["master", "gestor_segem"]:
+    if not _pode_acessar_segem(user_obj):
         return RedirectResponse("/dashboard")
 
     itens = (
@@ -222,7 +237,7 @@ def segem_add_form(
     if not user:
         return RedirectResponse("/login")
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return RedirectResponse("/dashboard")
     unidades = db.query(Unidade).filter(Unidade.ativo == True).order_by(Unidade.nome).all()
     produtos_segem = db.query(ProdutoSegem).order_by(ProdutoSegem.codigo).all()
@@ -251,7 +266,7 @@ async def segem_add_submit(
     if not user:
         return RedirectResponse("/login")
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return RedirectResponse("/dashboard")
     form = await request.form()
     tombos = form.getlist("num_tombo_gcm")
@@ -303,14 +318,14 @@ def segem_edit_form(
     if not user:
         return RedirectResponse("/login")
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return RedirectResponse("/dashboard")
     item = db.query(SegemItem).options(
         joinedload(SegemItem.produtos)
     ).filter(SegemItem.id == item_id).first()
     if not item:
         return RedirectResponse("/segem")
-    if user_obj.perfil != "master" and item.municipio_id != user_obj.municipio_id:
+    if not _is_master(user_obj) and item.municipio_id != user_obj.municipio_id:
         return RedirectResponse("/segem")
     unidades = db.query(Unidade).filter(Unidade.ativo == True).order_by(Unidade.nome).all()
     produtos_segem = db.query(ProdutoSegem).order_by(ProdutoSegem.codigo).all()
@@ -340,14 +355,14 @@ def segem_view_form(
     if not user:
         return RedirectResponse("/login")
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return RedirectResponse("/dashboard")
     item = db.query(SegemItem).options(
         joinedload(SegemItem.produtos)
     ).filter(SegemItem.id == item_id).first()
     if not item:
         return RedirectResponse("/segem")
-    if user_obj.perfil != "master" and item.municipio_id != user_obj.municipio_id:
+    if not _is_master(user_obj) and item.municipio_id != user_obj.municipio_id:
         return RedirectResponse("/segem")
     unidades = db.query(Unidade).filter(Unidade.ativo == True).order_by(Unidade.nome).all()
     produtos_segem = db.query(ProdutoSegem).order_by(ProdutoSegem.codigo).all()
@@ -376,12 +391,12 @@ async def segem_edit_submit(
     if not user:
         return RedirectResponse("/login")
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return RedirectResponse("/dashboard")
     item = db.query(SegemItem).options(joinedload(SegemItem.produtos)).filter(SegemItem.id == item_id).first()
     if not item:
         return RedirectResponse("/segem")
-    if user_obj.perfil != "master" and item.municipio_id != user_obj.municipio_id:
+    if not _is_master(user_obj) and item.municipio_id != user_obj.municipio_id:
         return RedirectResponse("/segem")
     form = await request.form()
     tombos = form.getlist("num_tombo_gcm")
@@ -428,13 +443,13 @@ def segem_get_item(
     if not user:
         return JSONResponse({"error": "Não autenticado"}, status_code=401)
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return JSONResponse({"error": "Sem permissão"}, status_code=403)
 
     item = db.query(SegemItem).filter(SegemItem.id == item_id).first()
     if not item:
         return JSONResponse({"error": "Registro não encontrado"}, status_code=404)
-    if user_obj.perfil != "master" and item.municipio_id != user_obj.municipio_id:
+    if not _is_master(user_obj) and item.municipio_id != user_obj.municipio_id:
         return JSONResponse({"error": "Sem permissão"}, status_code=403)
 
     return JSONResponse({
@@ -478,14 +493,14 @@ def segem_save(
     if not user:
         return JSONResponse({"error": "Não autenticado"}, status_code=401)
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return JSONResponse({"error": "Sem permissão"}, status_code=403)
 
     if id:
         item = db.query(SegemItem).filter(SegemItem.id == id).first()
         if not item:
             return JSONResponse({"error": "Registro não encontrado"}, status_code=404)
-        if user_obj.perfil != "master" and item.municipio_id != user_obj.municipio_id:
+        if not _is_master(user_obj) and item.municipio_id != user_obj.municipio_id:
             return JSONResponse({"error": "Sem permissão"}, status_code=403)
     else:
         item = SegemItem(
@@ -525,13 +540,13 @@ def segem_delete(
     if not user:
         return JSONResponse({"success": False, "message": "Não autenticado"}, status_code=401)
     user_obj = _user_obj(db, user)
-    if not user_obj or user_obj.perfil not in ["master", "gestor_segem"]:
+    if not user_obj or not _pode_acessar_segem(user_obj):
         return JSONResponse({"success": False, "message": "Sem permissão"}, status_code=403)
 
     item = db.query(SegemItem).filter(SegemItem.id == item_id).first()
     if not item:
         return JSONResponse({"success": False, "message": "Registro não encontrado"})
-    if user_obj.perfil != "master" and item.municipio_id != user_obj.municipio_id:
+    if not _is_master(user_obj) and item.municipio_id != user_obj.municipio_id:
         return JSONResponse({"success": False, "message": "Sem permissão"})
 
     db.delete(item)

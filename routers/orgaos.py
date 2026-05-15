@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from database import get_db
 from dependencies import get_current_user, registrar_log
 from models import User, Orgao, Municipio, Estado
-from shared_templates import templates
+from templating import templates
 
 router = APIRouter(prefix="/orgaos", tags=["Órgãos"])
 

@@ -13,7 +13,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 import io
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
-from shared_templates import templates
+from templating import templates
 
 router = APIRouter(prefix="/logs", tags=["Logs"])
 

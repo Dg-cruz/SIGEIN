@@ -2,109 +2,182 @@
 
 {% block title %}Dashboard - SIGEIN{% endblock %}
 
- <!-- Link para o CSS principal -->
-    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-
 {% block content %}
-<h2>Bem-vindo{% if user %}, {{ user }}{% endif %}!</h2>
-<p>Resumo rápido do estoque e movimentações:</p>
+<link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}">
 
-<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px;">
+<div class="dashboard-page">
 
-    <!-- Total Produtos -->
-    <div style="flex:1; min-width: 180px; background:#4CAF50; color:white; padding:20px; border-radius:10px; text-align:center;">
-        <div style="font-size: 24px; margin-bottom: 8px;">{{ total_products }}</div>
-        <div>Total de Produtos</div>
+  <header class="dash-header">
+    <div class="dash-header__greeting">
+      <h1>Olá{% if user_display %}, {{ user_display }}{% endif %}</h1>
+      <p>Visão geral do estoque e movimentações dos últimos 7 dias.</p>
     </div>
-
-    <!-- Estoque Crítico -->
-    <div style="flex:1; min-width: 180px; background:#FF5722; color:white; padding:20px; border-radius:10px; text-align:center;">
-        <div style="font-size: 24px; margin-bottom: 8px;">{{ critical_products }}</div>
-        <div>Produtos Críticos</div>
+    <div class="dash-header__meta">
+      <span class="dash-pill dash-pill--live">Sistema online</span>
+      <span class="dash-pill">Atualizado agora</span>
     </div>
+  </header>
 
-    <!-- Estoque Zerado -->
-    <div style="flex:1; min-width: 180px; background:#f44336; color:white; padding:20px; border-radius:10px; text-align:center;">
-        <div style="font-size: 24px; margin-bottom: 8px;">{{ zero_stock_products }}</div>
-        <div>Produtos Zerados</div>
-    </div>
+  <section class="dash-kpi-grid" aria-label="Indicadores principais">
+    <article class="dash-kpi dash-kpi--products">
+      <div class="dash-kpi__top">
+        <span class="dash-kpi__icon" aria-hidden="true">📦</span>
+        <span class="dash-kpi__trend dash-kpi__trend--neutral">catálogo</span>
+      </div>
+      <div class="dash-kpi__value" data-count="{{ total_products }}">{{ total_products }}</div>
+      <div class="dash-kpi__label">Total de produtos</div>
+    </article>
 
-    <!-- Movimentações Recentes -->
-    <div style="flex:1; min-width: 180px; background:#2196F3; color:white; padding:20px; border-radius:10px; text-align:center;">
-        <div style="font-size: 24px; margin-bottom: 8px;">{{ recent_movements_count }}</div>
-        <div>Movimentações Recentes</div>
+    <article class="dash-kpi dash-kpi--critical">
+      <div class="dash-kpi__top">
+        <span class="dash-kpi__icon" aria-hidden="true">⚠️</span>
+        <span class="dash-kpi__trend dash-kpi__trend--neutral">atenção</span>
+      </div>
+      <div class="dash-kpi__value" data-count="{{ critical_products }}">{{ critical_products }}</div>
+      <div class="dash-kpi__label">Estoque crítico</div>
+    </article>
+
+    <article class="dash-kpi dash-kpi--zero">
+      <div class="dash-kpi__top">
+        <span class="dash-kpi__icon" aria-hidden="true">🚫</span>
+        <span class="dash-kpi__trend dash-kpi__trend--neutral">urgente</span>
+      </div>
+      <div class="dash-kpi__value" data-count="{{ zero_stock_products }}">{{ zero_stock_products }}</div>
+      <div class="dash-kpi__label">Produtos zerados</div>
+    </article>
+
+    <article class="dash-kpi dash-kpi--movements">
+      <div class="dash-kpi__top">
+        <span class="dash-kpi__icon" aria-hidden="true">🔄</span>
+        <span class="dash-kpi__trend dash-kpi__trend--neutral">7 dias</span>
+      </div>
+      <div class="dash-kpi__value" data-count="{{ recent_movements_count }}">{{ recent_movements_count }}</div>
+      <div class="dash-kpi__label">Movimentações recentes</div>
+    </article>
+  </section>
+
+  {% if total_products > 0 %}
+  <section class="dash-health" aria-label="Saúde do estoque">
+    <div class="dash-health__head">
+      <h2>Saúde do estoque</h2>
+      <span class="dash-health__pct">{{ health_percent }}%</span>
     </div>
+    <div class="dash-health__bar" role="img" aria-label="Distribuição do estoque">
+      <div class="dash-health__seg dash-health__seg--ok" style="width: {{ pct_ok }}%"></div>
+      <div class="dash-health__seg dash-health__seg--crit" style="width: {{ pct_critical }}%"></div>
+      <div class="dash-health__seg dash-health__seg--zero" style="width: {{ pct_zero }}%"></div>
+    </div>
+    <div class="dash-health__legend">
+      <span><i style="background:#10b981"></i> Normal ({{ stock_ok }})</span>
+      <span><i style="background:#f59e0b"></i> Crítico ({{ critical_products }})</span>
+      <span><i style="background:#ef4444"></i> Zerado ({{ zero_stock_products }})</span>
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="dash-grid-2">
+    <section class="dash-panel">
+      <div class="dash-panel__head">
+        <h2>Produtos com estoque crítico</h2>
+        <a href="/stock">Ver estoque completo →</a>
+      </div>
+      {% if critical_stock %}
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Unidade</th>
+              <th>Qtd.</th>
+              <th>Mínimo</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in critical_stock %}
+            <tr>
+              <td><strong>{{ s.product_name }}</strong></td>
+              <td>{{ s.unit_name }}</td>
+              <td>{{ s.quantidade }}</td>
+              <td>{{ s.quantidade_minima }}</td>
+              <td>
+                {% if s.status == 'ZERADO' %}
+                <span class="dash-badge dash-badge--zerado">Zerado</span>
+                {% elif s.status == 'CRITICO' %}
+                <span class="dash-badge dash-badge--critico">Crítico</span>
+                {% else %}
+                <span class="dash-badge dash-badge--ok">OK</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="dash-empty">
+        <div class="dash-empty__icon">✅</div>
+        <p><strong>Nenhum alerta no momento</strong></p>
+        <p>Todos os itens monitorados estão dentro do nível mínimo.</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <aside class="dash-panel">
+      <div class="dash-panel__head">
+        <h2>Ações rápidas</h2>
+      </div>
+      <nav class="dash-actions" aria-label="Atalhos">
+        <a href="/stock" class="dash-action dash-action--stock">
+          <span class="dash-action__icon">📋</span>
+          <span class="dash-action__text">
+            <strong>Estoque</strong>
+            <small>Consultar e gerenciar itens</small>
+          </span>
+        </a>
+        <a href="/movements" class="dash-action dash-action--mov">
+          <span class="dash-action__icon">↔️</span>
+          <span class="dash-action__text">
+            <strong>Movimentações</strong>
+            <small>Entradas, saídas e transferências</small>
+          </span>
+        </a>
+        <a href="/stock/audit" class="dash-action dash-action--audit">
+          <span class="dash-action__icon">🔍</span>
+          <span class="dash-action__text">
+            <strong>Auditoria</strong>
+            <small>Conferência e rastreabilidade</small>
+          </span>
+        </a>
+        <a href="/stock/alerts" class="dash-action dash-action--alert">
+          <span class="dash-action__icon">🔔</span>
+          <span class="dash-action__text">
+            <strong>Alertas críticos</strong>
+            <small>Itens que exigem ação</small>
+          </span>
+        </a>
+      </nav>
+    </aside>
+  </div>
 
 </div>
 
-<h3 style="margin-top:30px;">Produtos com Estoque Crítico</h3>
-<table class="dashboard-critical-table" style="width:100%; border-collapse: collapse; margin-top:10px; background:#fff;">
-    <thead style="background:#f0f0f0;">
-        <tr>
-            <th style="padding:8px; border:1px solid #ccc;">Produto</th>
-            <th style="padding:8px; border:1px solid #ccc;">Unidade</th>
-            <th style="padding:8px; border:1px solid #ccc;">Quantidade</th>
-            <th style="padding:8px; border:1px solid #ccc;">Mínimo</th>
-            <th style="padding:8px; border:1px solid #ccc;">Status</th>
-        </tr>
-    </thead>
-    <tbody style="background:#fff;">
-        {% for s in critical_stock %}
-<tr class="
-    {% if s.status == 'ZERADO' %}status-zerado
-    {% elif s.status == 'CRITICO' %}status-critico
-    {% else %}status-ok{% endif %}
-">
-    <td style="padding:8px; border:1px solid #ccc;">{{ s.product_name }}</td>
-    <td style="padding:8px; border:1px solid #ccc;">{{ s.unit_name }}</td>
-    <td style="padding:8px; border:1px solid #ccc;">{{ s.quantidade }}</td>
-    <td style="padding:8px; border:1px solid #ccc;">{{ s.quantidade_minima }}</td>
-    <td style="padding:8px; border:1px solid #ccc;">{{ s.status }}</td>
-</tr>
-{% endfor %}
-
-    </tbody>
-</table>
-<style>
-.dashboard-critical-table { background: #fff !important; }
-.dashboard-critical-table tbody { background: #fff !important; }
-.dashboard-critical-table tbody tr { background: #fff !important; }
-.dashboard-critical-table tbody tr.status-critico,
-.dashboard-critical-table tbody tr.status-zerado,
-.dashboard-critical-table tbody tr.status-ok { background: #fff !important; }
-</style>
-
-<h3 style="margin-top:30px;">Ações Rápidas</h3>
-<div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
-
-    <a href="/stock" style="flex:1; min-width: 150px; text-decoration:none;">
-        <div style="background:#607d8b; color:white; padding:20px; border-radius:8px; text-align:center;">
-            <img width="32" height="32" src="https://img.icons8.com/fluency/48/warehouse.png" alt="Estoque">
-            <div>Estoque</div>
-        </div>
-    </a>
-
-    <a href="/movements" style="flex:1; min-width: 150px; text-decoration:none;">
-        <div style="background:#00bcd4; color:white; padding:20px; border-radius:8px; text-align:center;">
-            <img width="32" height="32" src="https://img.icons8.com/dusk/64/move-stock.png" alt="Movimentações">
-            <div>Movimentações</div>
-        </div>
-    </a>
-
-    <a href="/audit" style="flex:1; min-width: 150px; text-decoration:none;">
-        <div style="background:#9c27b0; color:white; padding:20px; border-radius:8px; text-align:center;">
-            <img width="32" height="32" src="https://img.icons8.com/ios-filled/50/ffffff/inspection.png" alt="Auditoria">
-            <div>Auditoria</div>
-        </div>
-    </a>
-
-    <a href="/alerts" style="flex:1; min-width: 150px; text-decoration:none;">
-        <div style="background:#ff9800; color:white; padding:20px; border-radius:8px; text-align:center;">
-            <img width="32" height="32" src="https://img.icons8.com/ios-filled/50/ffffff/error.png" alt="Alertas">
-            <div>Alertas Críticos</div>
-        </div>
-    </a>
-
-</div>
-
+<script>
+(function () {
+  document.querySelectorAll(".dash-kpi__value[data-count]").forEach(function (el) {
+    var target = parseInt(el.getAttribute("data-count"), 10) || 0;
+    if (target === 0) return;
+    var duration = 600;
+    var start = performance.now();
+    function tick(now) {
+      var p = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * eased);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    el.textContent = "0";
+    requestAnimationFrame(tick);
+  });
+})();
+</script>
 {% endblock %}

@@ -101,6 +101,17 @@ PERMISSOES_POR_PERFIL = {
         Permissao.MOVIMENTAR_ESTOQUE,
         Permissao.GERAR_RELATORIO_ESTOQUE,
     ],
+
+    "gestor_segem": [
+        # Gestor SEGEM — inventário (mesmo escopo do gestor de estoque)
+        Permissao.ACESSAR_INVENTARIO,
+        Permissao.CRIAR_PRODUTO,
+        Permissao.EDITAR_PRODUTO,
+        Permissao.EXCLUIR_PRODUTO,
+        Permissao.VISUALIZAR_ESTOQUE,
+        Permissao.MOVIMENTAR_ESTOQUE,
+        Permissao.GERAR_RELATORIO_ESTOQUE,
+    ],
     
     "gestor_protocolo": [
         # Apenas protocolo

@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, Float, Date, ForeignKey, func, Enum as SQLEnum
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 from database import Base
 from datetime import datetime
 import enum
@@ -43,9 +44,18 @@ class User(Base):
     orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False)
     unidade_id = Column(Integer, ForeignKey("unidades.id"), nullable=False)
     
-    # ✅ Perfil e Status gravados como string (colunas existentes role/status)
-    perfil = Column("role", String(50), nullable=False, default=PerfilEnum.OPERADOR.value)
-    status = Column(String(20), nullable=False, default=StatusUsuarioEnum.PENDENTE.value)
+    # ✅ Perfil e Status (coluna no banco: role / status)
+    perfil = Column(
+        "role",
+        SQLEnum(PerfilEnum, native_enum=False, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=PerfilEnum.OPERADOR,
+    )
+    status = Column(
+        SQLEnum(StatusUsuarioEnum, native_enum=False, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=StatusUsuarioEnum.PENDENTE,
+    )
     
     # ✅ Auditoria
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -58,38 +68,65 @@ class User(Base):
     orgao = relationship("Orgao")
     unidade = relationship("Unidade")
     movements = relationship("Movement", back_populates="user")
-    
+
+    # Alias legado: sessão e routers antigos usam "username" (= e-mail)
+    @hybrid_property
+    def username(self):
+        return self.email
+
+    @username.setter
+    def username(self, value):
+        self.email = value
+
+    @username.expression
+    def username(cls):
+        return cls.email
+
+    @property
+    def role(self):
+        p = self.perfil
+        return p.value if hasattr(p, "value") else p
+
+    @role.setter
+    def role(self, value):
+        self.perfil = PerfilEnum(value) if isinstance(value, str) else value
+
     def __str__(self):
         return f"{self.nome} ({self.cpf})"
     
     # ✅ Métodos helper para permissões (usam strings)
+    def _perfil_valor(self):
+        p = self.perfil
+        return p.value if hasattr(p, "value") else str(p)
+
     def pode_acessar_inventario(self):
-        return self.perfil in [
+        return self._perfil_valor() in {
             PerfilEnum.MASTER.value,
             PerfilEnum.ADMIN_MUNICIPAL.value,
             PerfilEnum.GESTOR_ESTOQUE.value,
             PerfilEnum.GESTOR_GERAL.value,
-        ]
+            PerfilEnum.GESTOR_SEGEM.value,
+        }
     
     def pode_acessar_protocolo(self):
-        return self.perfil in [
+        return self._perfil_valor() in {
             PerfilEnum.MASTER.value,
             PerfilEnum.ADMIN_MUNICIPAL.value,
             PerfilEnum.GESTOR_PROTOCOLO.value,
             PerfilEnum.GESTOR_GERAL.value,
-        ]
+        }
 
     def pode_acessar_segem(self):
-        return self.perfil in [
+        return self._perfil_valor() in {
             PerfilEnum.MASTER.value,
             PerfilEnum.GESTOR_SEGEM.value,
-        ]
-    
+        }
+
     def pode_gerenciar_usuarios(self):
-        return self.perfil in [
+        return self._perfil_valor() in {
             PerfilEnum.MASTER.value,
             PerfilEnum.ADMIN_MUNICIPAL.value,
-        ]
+        }
 
 
 # =====================================================
@@ -178,7 +215,6 @@ class Item(Base):
     orgao = relationship("Orgao")
     product = relationship("Product", back_populates="items")
     estado = relationship("EquipmentState")
-    # Usa a tabela 'unidades', mas o atributo continua sendo 'unit'
     unit = relationship("Unidade", back_populates="items")
 
 
@@ -205,7 +241,6 @@ class Stock(Base):
     municipio = relationship("Municipio")
     orgao = relationship("Orgao")
     product = relationship("Product", back_populates="stocks")
-    # Usa a tabela 'unidades', mas o atributo continua sendo 'unit'
     unit = relationship("Unidade", back_populates="stocks")
 
 
@@ -237,8 +272,16 @@ class Movement(Base):
     item = relationship("Item")
     user = relationship("User", back_populates="movements")
 
-    unit_origem = relationship("Unidade", foreign_keys=[unit_origem_id])
-    unit_destino = relationship("Unidade", foreign_keys=[unit_destino_id])
+    unit_origem = relationship(
+        "Unidade",
+        foreign_keys=[unit_origem_id],
+        back_populates="movimentos_origem",
+    )
+    unit_destino = relationship(
+        "Unidade",
+        foreign_keys=[unit_destino_id],
+        back_populates="movimentos_destino",
+    )
 
 
 # =====================================================
@@ -570,18 +613,44 @@ class Unidade(Base):
 
     orgao = relationship("Orgao", back_populates="unidades")
 
-    # 🔥 Relacionamentos importantes
+    # Compatibilidade com routers/templates legados (name/manager)
+    @hybrid_property
+    def name(self):
+        return self.nome
+
+    @name.setter
+    def name(self, value):
+        self.nome = value
+
+    @name.expression
+    def name(cls):
+        return cls.nome
+
+    @hybrid_property
+    def manager(self):
+        return self.responsavel
+
+    @manager.setter
+    def manager(self, value):
+        self.responsavel = value
+
+    @manager.expression
+    def manager(cls):
+        return cls.responsavel
+
     users = relationship("User", back_populates="unidade")
     items = relationship("Item", back_populates="unit")
     stocks = relationship("Stock", back_populates="unit")
     movimentos_origem = relationship(
         "Movement",
         foreign_keys="Movement.unit_origem_id",
+        back_populates="unit_origem",
         overlaps="unit_origem",
     )
     movimentos_destino = relationship(
         "Movement",
         foreign_keys="Movement.unit_destino_id",
+        back_populates="unit_destino",
         overlaps="unit_destino",
     )
 
@@ -638,3 +707,7 @@ class ProdutoSegem(Base):
     id = Column(Integer, primary_key=True, index=True)
     codigo = Column(String(100), unique=True, nullable=False, index=True)
     descricao = Column(Text)
+
+
+# Alias legado: vários routers ainda importam Unit
+Unit = Unidade

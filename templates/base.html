@@ -21,136 +21,9 @@
         }
 
         /* =========================
-           MENU LATERAL (SIDEBAR)
-        ========================== */
-        .sidebar {
-            height: 100vh;              /* Ocupa altura total da tela */
-            width: 220px;               /* Largura fixa */
-            position: fixed;            /* Fixo na lateral */
-            top: 0;
-            left: 0;
-            background-color: #2881e7;
-            padding-top: 60px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Links principais do menu */
-        .sidebar a {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            text-decoration: none;
-            color: white;
-            border-radius: 5px;
-            margin: 2px 10px;
-            transition: background 0.3s;
-        }
-
-        /* Título do menu */
-        .sidebar-title {
-            color: white !important;
-            text-align: center !important;
-            font-size: 1.3rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        /* Ícones do menu */
-        .sidebar a i {
-            margin-right: 10px;
-            font-size: 1.2rem;
-            color: #ffd700;
-        }
-
-        /* Hover dos links */
-        .sidebar a:hover {
-            background-color: #005fa3;
-        }
-
-        /* =========================
-           SUBMENU (ADMINISTRAÇÃO)
-        ========================== */
-        .submenu {
-            display: flex;
-            flex-direction: column;
-            margin: 5px 10px;
-        }
-
-        /* Botão que abre o submenu */
-        .submenu-btn {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: none;
-            border: none;
-            color: white;
-            padding: 12px 20px;
-            font-size: 1rem;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: left;
-            transition: background 0.3s;
-        }
-
-        .submenu-btn:hover {
-            background-color: #005fa3;
-        }
-
-        /* Ícones internos */
-        .submenu-btn i,
-        .submenu-content a i {
-            color: #ffd700;
-            margin-right: 10px;
-            font-size: 1.1rem;
-        }
-
-        /* Conteúdo oculto do submenu */
-        .submenu-content {
-            display: none;
-            flex-direction: column;
-            margin-left: 15px;
-            margin-top: 5px;
-        }
-
-        /* Links internos do submenu */
-        .submenu-content a {
-            display: flex;
-            align-items: center;
-            padding: 8px 20px;
-            color: #e0e0e0;
-            font-size: 0.95rem;
-            border-radius: 4px;
-            transition: background 0.3s;
-        }
-
-        .submenu-content a:hover {
-            background-color: #006bb5;
-        }
-
-        /* Quando submenu está aberto */
-        .submenu.open .submenu-content {
-            display: flex;
-        }
-
-        /* Ícone seta (caret) */
-        .submenu .caret {
-            margin-left: auto;
-            color: white;
-            transition: transform 0.3s;
-        }
-
-        /* Rotaciona seta quando aberto */
-        .submenu.open .caret {
-            transform: rotate(180deg);
-        }
-
-        /* =========================
-           CONTEÚDO PRINCIPAL
+           CONTEÚDO PRINCIPAL (margem da sidebar em sidebar.css)
         ========================== */
         .main-content {
-            margin-left: 220px;  /* Espaço da sidebar */
-            padding: 40px;
             min-height: 100vh;
         }
 
@@ -160,7 +33,7 @@
             padding: 30px 40px;
             border-radius: 10px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            max-width: 1600px;
+            max-width: 600px;
             margin: auto;
         }
 
@@ -172,8 +45,7 @@
             color: #ffffff;
             padding: 1px 20px;
             text-align: center;
-            margin-bottom: 40px;  /* 👈 ESPAÇO ENTRE HEADER E CONTEÚDO */
-            margin-top: 25px; /* 👈 ESPAÇO ENTRE MENU DO USUÁRIO E CONTEÚDO */
+            margin-bottom: 40px; /* 👈 ESPAÇO ENTRE HEADER E CONTEÚDO */
         }
 
         .app-header-content {
@@ -225,223 +97,235 @@
         }
 
         /* =========================
-   MENU DO USUÁRIO (TOPO)
-========================== */
-.user-menu-wrap {
-    position: fixed;
-    top: 10px;
-    right: 40px;
-    z-index: 1000;
-}
+           MENU DO USUÁRIO (TOPO)
+        ========================== */
+        .user-menu {
+            position: fixed;
+            top: 14px;
+            right: 24px;
+            z-index: 1100;
+            font-family: "Segoe UI", system-ui, sans-serif;
+        }
 
-.user-menu-trigger {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 14px;
-    background: rgba(255,255,255,0.95);
-    border: 1px solid rgba(0,119,204,0.25);
-    border-radius: 24px;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transition: box-shadow 0.2s, background 0.2s;
-}
+        .user-menu__trigger {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px 8px 10px;
+            background: #fff;
+            border: 1px solid rgba(13, 110, 253, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            transition: box-shadow 0.2s, border-color 0.2s;
+            max-width: 320px;
+        }
 
-.user-menu-trigger:hover {
-    background: #fff;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-}
+        .user-menu__trigger:hover,
+        .user-menu.open .user-menu__trigger {
+            border-color: #0d6efd;
+            box-shadow: 0 6px 20px rgba(13, 110, 253, 0.18);
+        }
 
-.user-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: linear-gradient(135deg, #0077cc 0%, #00aaff 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
+        .user-menu__avatar {
+            font-size: 1.75rem;
+            color: #0d6efd;
+            line-height: 1;
+            flex-shrink: 0;
+        }
 
-.user-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
+        .user-menu__info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 0;
+            text-align: left;
+        }
 
-.user-name {
-    font-weight: 600;
-    color: #0077cc;
-    font-size: 14px;
-    margin: 0;
-    user-select: none;
-}
+        .user-menu__welcome {
+            font-size: 0.72rem;
+            color: #64748b;
+            font-weight: 500;
+            line-height: 1.2;
+        }
 
-.user-menu-trigger .fa-chevron-down {
-    font-size: 10px;
-    color: #6c757d;
-    transition: transform 0.2s;
-}
+        .user-menu__name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
 
-.user-menu-wrap.open .user-menu-trigger .fa-chevron-down {
-    transform: rotate(180deg);
-}
+        .user-menu__caret {
+            margin-left: auto;
+            color: #64748b;
+            font-size: 0.75rem;
+            transition: transform 0.25s ease;
+            flex-shrink: 0;
+        }
 
-.user-dropdown {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: calc(100% + 6px);
-    min-width: 200px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    border: 1px solid #e9ecef;
-    overflow: hidden;
-    padding: 6px 0;
-}
+        .user-menu.open .user-menu__caret {
+            transform: rotate(180deg);
+        }
 
-.user-menu-wrap.open .user-dropdown {
-    display: block;
-}
+        .user-menu__dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            min-width: 240px;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.14);
+            overflow: hidden;
+            animation: userMenuDrop 0.2s ease-out;
+        }
 
-.user-dropdown a {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    text-decoration: none;
-    color: #212529;
-    font-size: 14px;
-    transition: background 0.15s;
-}
+        @keyframes userMenuDrop {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-.user-dropdown a:hover {
-    background: #f8f9fa;
-}
+        .user-menu.open .user-menu__dropdown {
+            display: block;
+        }
 
-.user-dropdown a i {
-    width: 20px;
-    text-align: center;
-    color: #0077cc;
-}
+        .user-menu__dropdown-header {
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #eff6ff, #f8fafc);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        }
 
-.user-dropdown .dropdown-divider {
-    height: 1px;
-    background: #e9ecef;
-    margin: 4px 0;
-}
+        .user-menu__dropdown-header strong {
+            display: block;
+            font-size: 0.9rem;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
 
-/* Modal Meus Dados */
-.meus-dados-modal-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    z-index: 9998;
-    align-items: center;
-    justify-content: center;
-}
+        .user-menu__dropdown-header small {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
 
-.meus-dados-modal-backdrop.show {
-    display: flex;
-}
+        .user-menu__dropdown-header .perfil-badge {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 2px 8px;
+            background: #0d6efd;
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 600;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
 
-.meus-dados-modal {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    max-width: 420px;
-    width: 90%;
-    max-height: 90vh;
-    overflow: auto;
-}
+        .user-menu__dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #334155;
+            font-size: 0.88rem;
+            transition: background 0.15s;
+        }
 
-.meus-dados-modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid #e9ecef;
-    font-size: 18px;
-    font-weight: 700;
-    color: #212529;
-}
+        .user-menu__dropdown a i {
+            width: 18px;
+            color: #0d6efd;
+            text-align: center;
+        }
 
-.meus-dados-modal-body {
-    padding: 24px;
-}
+        .user-menu__dropdown a:hover {
+            background: #f1f5f9;
+        }
 
-.meus-dados-field {
-    margin-bottom: 16px;
-}
+        .user-menu__dropdown a.logout-link {
+            color: #dc2626;
+            border-top: 1px solid rgba(15, 23, 42, 0.06);
+        }
 
-.meus-dados-field:last-child {
-    margin-bottom: 0;
-}
+        .user-menu__dropdown a.logout-link i {
+            color: #dc2626;
+        }
 
-.meus-dados-section-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #495057;
-    margin: 20px 0 12px 0;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #e9ecef;
-}
 
-.meus-dados-field label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6c757d;
-    margin-bottom: 4px;
-}
-
-.meus-dados-field .value {
-    font-size: 14px;
-    color: #212529;
-    padding: 10px 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-
-.meus-dados-modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid #e9ecef;
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-}
-
-.meus-dados-modal-footer .btn-fechar {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-    background: #fff;
-    color: #495057;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.meus-dados-modal-footer .btn-fechar:hover {
-    background: #f8f9fa;
-}
-
-.meus-dados-modal-footer .btn-editar {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    background: #0077cc;
-    color: #fff;
-    cursor: pointer;
-    font-size: 14px;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.meus-dados-modal-footer .btn-editar:hover {
-    background: #0066b3;
-    color: #fff;
-}
+        .meus-dados-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 9998;
+            align-items: center;
+            justify-content: center;
+        }
+        .meus-dados-modal-backdrop.show { display: flex; }
+        .meus-dados-modal {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 420px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: auto;
+        }
+        .meus-dados-modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .meus-dados-modal-body { padding: 24px; }
+        .meus-dados-field { margin-bottom: 16px; }
+        .meus-dados-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #495057;
+            margin: 20px 0 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .meus-dados-field label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        .meus-dados-field .value {
+            font-size: 14px;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .meus-dados-modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .meus-dados-modal-footer .btn-fechar {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            cursor: pointer;
+        }
+        .meus-dados-modal-footer .btn-editar {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #0077cc;
+            color: #fff;
+            text-decoration: none;
+        }
         /* =========================
            CAMPOS DE FORMULÁRIO
         ========================== */
@@ -452,7 +336,7 @@
         select {
             width: 100%;
             padding: 12px 15px;
-            margin: 0px 0 20px 0;
+            margin: 10px 0 20px 0;
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 1rem;
@@ -505,91 +389,130 @@
             .form-grid { grid-template-columns: 1fr; }
         }
 
-        /* =========================
-           E-PROTOCOLO - BOTÃO VOLTAR
-        ========================== */
-        .btn-voltar-eprotocolo {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: #6c757d;
-            color: white !important;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        .btn-voltar-eprotocolo:hover {
-            background: #5a6268;
-            color: white !important;
-        }
-        .eprotocolo-page-top {
-            margin-bottom: 16px;
-        }
-
     </style>
 
     <!-- ================= CSS EXTERNOS ================= -->
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/static/css/forms.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/sidebar.css') }}">
 
 </head>
 
+{% set path = request.url.path %}
 
-<body>
+<body class="has-sidebar">
 
-    <!-- ===== MENU LATERAL PRINCIPAL ===== -->
-    <div class="sidebar">
-        <h2 class="sidebar-title">MENU</h2>
-        <a href="/dashboard"><img width="32" height="32" src="https://img.icons8.com/matisse/100/home.png" alt="home"/>Dashboard</a>
-        <a href="/users"><img width="32" height="32" src="https://img.icons8.com/plasticine/100/user.png" alt="user"/>Usuários</a>
-        <a href="/units"><img width="32" height="32" src="https://img.icons8.com/3d-fluency/94/place-marker.png" alt="place-marker"/>Unidade Administrativa</a>
-        <a href="/movements"><img width="32" height="32" src="https://img.icons8.com/dusk/64/move-stock.png" alt="move-stock"/>Movimentações</a>
-        <a href="/products"><img width="32" height="32" src="https://img.icons8.com/fluency/48/product.png" alt="Produtos" />Produtos</a>
-        <a href="/stock"><img src="https://img.icons8.com/fluency/48/warehouse.png" width="32">Estoque</a>
-        {% set perfil_atual = get_meus_dados(request)['perfil'] if get_meus_dados(request) else '' %}
-        {% if perfil_atual in ['master', 'gestor_segem'] %}
-        <a href="/segem"><img width="32" height="32" src="https://img.icons8.com/fluency/48/services.png" alt="Segem" />SEGEM</a>
-        {% endif %}
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
-        
-        <!-- Submenu Administração -->
-<div class="submenu">
-    <button class="submenu-btn">
-        <img 
-    src="https://img.icons8.com/3d-fluency/32/gear--v1.png" 
-    alt="Administração" 
-    class="menu-icon"
-  > Administração
-        <i class="fa fa-caret-down caret"></i>
+    <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+        <div class="sidebar__brand">
+            <a href="/dashboard" class="sidebar__logo">
+                <span class="sidebar__logo-icon"><i class="fas fa-cubes"></i></span>
+                <span class="sidebar__logo-text">
+                    <strong>SIGEIN</strong>
+                    <small>Gestão de Estoque e Inventário</small>
+                </span>
+            </a>
+        </div>
+
+        <nav class="sidebar__scroll">
+            <div class="sidebar__section">
+                <span class="sidebar__label">Principal</span>
+                <a href="/dashboard" class="sidebar-nav__link{% if path == '/dashboard' or path == '/' %} is-active{% endif %}">
+                    <i class="fas fa-chart-pie nav-icon"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+
+            <div class="sidebar__section">
+                <span class="sidebar__label">Inventário</span>
+                <a href="/users" class="sidebar-nav__link{% if path.startswith('/users') %} is-active{% endif %}">
+                    <i class="fas fa-users nav-icon"></i>
+                    <span>Usuários</span>
+                </a>
+                <a href="/units" class="sidebar-nav__link{% if path.startswith('/units') %} is-active{% endif %}">
+                    <i class="fas fa-building nav-icon"></i>
+                    <span>Unidades</span>
+                </a>
+                <a href="/movements" class="sidebar-nav__link{% if path.startswith('/movements') %} is-active{% endif %}">
+                    <i class="fas fa-right-left nav-icon"></i>
+                    <span>Movimentações</span>
+                </a>
+                <a href="/products" class="sidebar-nav__link{% if path.startswith('/products') %} is-active{% endif %}">
+                    <i class="fas fa-box nav-icon"></i>
+                    <span>Produtos</span>
+                </a>
+                <a href="/stock" class="sidebar-nav__link{% if path.startswith('/stock') %} is-active{% endif %}">
+                    <i class="fas fa-warehouse nav-icon"></i>
+                    <span>Estoque</span>
+                </a>
+                {% set perfil_atual = get_meus_dados(request).perfil if get_meus_dados(request) else (current_user_perfil or '') %}
+                {% if perfil_atual in ['master', 'gestor_segem'] %}
+                <a href="/segem" class="sidebar-nav__link{% if path.startswith('/segem') %} is-active{% endif %}">
+                    <i class="fas fa-shield-halved nav-icon"></i>
+                    <span>SEGEM</span>
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="sidebar__section">
+                <span class="sidebar__label">Cadastros</span>
+                <div class="sidebar-submenu{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') %} open{% endif %}" id="sidebarAdmin">
+                    <button type="button" class="sidebar-submenu__btn" aria-expanded="{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') %}true{% else %}false{% endif %}">
+                        <i class="fas fa-sliders nav-icon"></i>
+                        <span>Administração</span>
+                        <i class="fas fa-chevron-down sidebar-submenu__caret"></i>
+                    </button>
+                    <div class="sidebar-submenu__content">
+                        <div class="sidebar-submenu__inner">
+                            <a href="/equipment-types" class="sidebar-nav__link{% if path.startswith('/equipment-types') %} is-active{% endif %}">
+                                <i class="fas fa-laptop nav-icon"></i>
+                                <span>Tipos de equipamento</span>
+                            </a>
+                            <a href="/brands" class="sidebar-nav__link{% if path.startswith('/brands') %} is-active{% endif %}">
+                                <i class="fas fa-tag nav-icon"></i>
+                                <span>Marcas</span>
+                            </a>
+                            <a href="/states" class="sidebar-nav__link{% if path.startswith('/states') %} is-active{% endif %}">
+                                <i class="fas fa-circle-check nav-icon"></i>
+                                <span>Estados</span>
+                            </a>
+                            <a href="/categories" class="sidebar-nav__link{% if path.startswith('/categories') %} is-active{% endif %}">
+                                <i class="fas fa-folder nav-icon"></i>
+                                <span>Categorias</span>
+                            </a>
+                            <a href="/orgaos" class="sidebar-nav__link{% if path.startswith('/orgaos') %} is-active{% endif %}">
+                                <i class="fas fa-landmark nav-icon"></i>
+                                <span>Órgãos</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar__section">
+                <span class="sidebar__label">Sistema</span>
+                <a href="/eprotocolo" class="sidebar-nav__link{% if path.startswith('/eprotocolo') %} is-active{% endif %}">
+                    <i class="fas fa-file-lines nav-icon"></i>
+                    <span>E-Protocolo</span>
+                </a>
+                <a href="/logs" class="sidebar-nav__link{% if path.startswith('/logs') %} is-active{% endif %}">
+                    <i class="fas fa-clipboard-list nav-icon"></i>
+                    <span>Logs</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar__footer">
+            <small>NTI — Guarda Civil Municipal<br>Salvador / BA</small>
+        </div>
+    </aside>
+
+    <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">
+        <i class="fas fa-bars"></i>
     </button>
-    <div class="submenu-content">
-        <a href="/equipment-types"><img width="32" height="32" src="https://img.icons8.com/external-flaticons-flat-flat-icons/64/external-equipments-home-based-business-flaticons-flat-flat-icons-2.png" alt="external-equipments-home-based-business-flaticons-flat-flat-icons-2"/> Tipos de Equipamentos</a>
-        <a href="/brands"><img width="32" height="32" src="https://img.icons8.com/color/48/test-failed.png" alt="test-failed"/> Marca</a>
-        <a href="/states"><img width="32" height="32" src="https://img.icons8.com/external-filled-color-icons-papa-vector/78/external-Eye-contact-RGB-color-icon-charisma-development-filled-color-icons-papa-vector.png" alt="external-Eye-contact-RGB-color-icon-charisma-development-filled-color-icons-papa-vector"/> Estado</a>
-        <a href="/categories"><img width="32" height="32" src="https://img.icons8.com/?size=100&id=bRP0fqzTploE&format=png&color=000000" alt="Categorias"/>Categorias</a>
-        <a href="/orgaos"><img width="32" height="32" src="https://img.icons8.com/3d-fluency/94/place-marker.png" alt="Órgãos"/>Órgãos</a>
 
-    </div>
-</div>
-        <a href="/eprotocolo" ><img width="32" height="32" src="https://img.icons8.com/arcade/64/documents.png" alt="E-documents" />E-Protocolo</a>
-
-
-    <a href="/logs" style="display:inline-flex; align-items:center; gap:8px;">
-  <img
-    src="https://img.icons8.com/external-flaticons-lineal-color-flat-icons/32/external-logs-computer-programming-icons-flaticons-lineal-color-flat-icons.png"
-    alt="Logs"
-    width="32"
-    height="32"
-  >
-  Logs
-    </a>
-
-
-    </div>
 
     <!-- ===== CONTEÚDO PRINCIPAL ===== -->
     <div class="main-content">
@@ -614,58 +537,60 @@
 {% endif %}
 
 
-        <!-- Menu do usuário (canto superior direito) -->
         {% set meus_dados = get_meus_dados(request) %}
-        <div class="user-menu-wrap" id="user-menu-wrap">
-            <div class="user-menu-trigger" id="user-menu-trigger" role="button" aria-expanded="false" aria-haspopup="true">
-                <span class="user-icon"><img src="https://img.icons8.com/?size=100&id=tZuAOUGm9AuS&format=png&color=000000" alt="Usuário" width="32" height="32"></span>
-                <span class="user-name">{{ get_user_display_name(request) }}</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="user-dropdown">
-                <a href="#" id="btn-meus-dados"><i class="fas fa-id-card"></i> Meus Dados</a>
-                <div class="dropdown-divider"></div>
-                <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        {% if is_logged_in or request.session.get('user') %}
+        <div class="user-menu" id="userMenu">
+            <button type="button" class="user-menu__trigger" id="userMenuBtn" aria-expanded="false" aria-haspopup="true">
+                <span class="user-menu__avatar"><i class="fas fa-user-circle"></i></span>
+                <span class="user-menu__info">
+                    <span class="user-menu__welcome">{{ user_saudacao or 'Olá' }}{% set _nome = current_user_nome or request.session.get('user_nome') or request.session.get('user') %}{% if _nome %}, {{ _nome.split()[0] }}{% endif %}</span>
+                    <span class="user-menu__name">{{ current_user_nome or request.session.get('user_nome') or request.session.get('user') }}</span>
+                </span>
+                <i class="fas fa-chevron-down user-menu__caret"></i>
+            </button>
+            <div class="user-menu__dropdown" id="userMenuDropdown" role="menu">
+                <div class="user-menu__dropdown-header">
+                    <strong>{{ current_user_nome or request.session.get('user_nome') or request.session.get('user') }}</strong>
+                    <small>{{ current_user_email or request.session.get('user') }}</small>
+                    {% if current_user_perfil_label %}
+                    <span class="perfil-badge">{{ current_user_perfil_label }}</span>
+                    {% endif %}
+                </div>
+                {% set _uid = current_user_id or request.session.get('user_id') %}
+                {% if _uid %}
+                <a href="#" id="btn-meus-dados" role="menuitem">
+                    <i class="fas fa-id-card"></i> Meus dados
+                </a>
+                <a href="/users/edit/{{ _uid }}" role="menuitem">
+                    <i class="fas fa-pen"></i> Editar perfil
+                </a>
+                {% endif %}
+                <a href="/dashboard" role="menuitem">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="/logout" class="logout-link" role="menuitem">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </a>
             </div>
         </div>
+        {% endif %}
 
-        <!-- Modal Meus Dados -->
+
         {% if meus_dados %}
         <div class="meus-dados-modal-backdrop" id="meus-dados-modal" aria-hidden="true">
             <div class="meus-dados-modal">
                 <div class="meus-dados-modal-header">Meus Dados</div>
                 <div class="meus-dados-modal-body">
-                    <div class="meus-dados-field">
-                        <label>Nome</label>
-                        <div class="value">{{ meus_dados.nome }}</div>
-                    </div>
-                    <div class="meus-dados-field">
-                        <label>E-mail</label>
-                        <div class="value">{{ meus_dados.email }}</div>
-                    </div>
-                    <div class="meus-dados-field">
-                        <label>Perfil</label>
-                        <div class="value">{{ meus_dados.perfil }}</div>
-                    </div>
+                    <div class="meus-dados-field"><label>Nome</label><div class="value">{{ meus_dados.nome }}</div></div>
+                    <div class="meus-dados-field"><label>E-mail</label><div class="value">{{ meus_dados.email }}</div></div>
+                    <div class="meus-dados-field"><label>Perfil</label><div class="value">{{ meus_dados.perfil }}</div></div>
                     {% if meus_dados.status %}
-                    <div class="meus-dados-field">
-                        <label>Status</label>
-                        <div class="value">{{ meus_dados.status }}</div>
-                    </div>
+                    <div class="meus-dados-field"><label>Status</label><div class="value">{{ meus_dados.status }}</div></div>
                     {% endif %}
                     <div class="meus-dados-section-title">Lotação administrativa</div>
-                    <div class="meus-dados-field">
-                        <label>Município</label>
-                        <div class="value">{{ meus_dados.municipio or '-' }}</div>
-                    </div>
-                    <div class="meus-dados-field">
-                        <label>Órgão</label>
-                        <div class="value">{{ meus_dados.orgao or '-' }}</div>
-                    </div>
-                    <div class="meus-dados-field">
-                        <label>Unidade</label>
-                        <div class="value">{{ meus_dados.unidade or '-' }}</div>
-                    </div>
+                    <div class="meus-dados-field"><label>Município</label><div class="value">{{ meus_dados.municipio or '-' }}</div></div>
+                    <div class="meus-dados-field"><label>Órgão</label><div class="value">{{ meus_dados.orgao or '-' }}</div></div>
+                    <div class="meus-dados-field"><label>Unidade</label><div class="value">{{ meus_dados.unidade or '-' }}</div></div>
                 </div>
                 <div class="meus-dados-modal-footer">
                     <button type="button" class="btn-fechar" id="meus-dados-fechar">Fechar</button>
@@ -680,64 +605,71 @@
         {% endblock %}
     </div>
 
-    <!-- ===== SCRIPT DE INTERAÇÃO DO SUBMENU ===== -->
     <script>
-        // Alterna a abertura do submenu quando clicado
-        document.querySelectorAll('.submenu-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const submenu = button.parentElement;
-                submenu.classList.toggle('open');
+        document.querySelectorAll('.sidebar-submenu__btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var submenu = button.closest('.sidebar-submenu');
+                var open = submenu.classList.toggle('open');
+                button.setAttribute('aria-expanded', open ? 'true' : 'false');
             });
         });
 
-        // Menu do usuário (dropdown por clique)
-        (function() {
-            var wrap = document.getElementById('user-menu-wrap');
-            var trigger = document.getElementById('user-menu-trigger');
+        (function () {
+            var toggle = document.getElementById('sidebarToggle');
+            var backdrop = document.getElementById('sidebarBackdrop');
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    document.body.classList.toggle('sidebar-open');
+                });
+            }
+            if (backdrop) {
+                backdrop.addEventListener('click', function () {
+                    document.body.classList.remove('sidebar-open');
+                });
+            }
+        })();
+
+        (function () {
+            const menu = document.getElementById('userMenu');
+            const btn = document.getElementById('userMenuBtn');
+            if (!menu || !btn) return;
+
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const open = menu.classList.toggle('open');
+                btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!menu.contains(e.target)) {
+                    menu.classList.remove('open');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    menu.classList.remove('open');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        })();
+
+        (function () {
             var btnMeusDados = document.getElementById('btn-meus-dados');
             var modal = document.getElementById('meus-dados-modal');
             var btnFechar = document.getElementById('meus-dados-fechar');
-
-            if (trigger) {
-                trigger.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    wrap.classList.toggle('open');
-                });
+            var menu = document.getElementById('userMenu');
+            function fechar() {
+                if (modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); }
             }
-
-            document.addEventListener('click', function() {
-                if (wrap) wrap.classList.remove('open');
+            if (btnMeusDados) btnMeusDados.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (menu) menu.classList.remove('open');
+                if (modal) { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); }
             });
-            if (wrap && wrap.querySelector('.user-dropdown')) {
-                wrap.querySelector('.user-dropdown').addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-            }
-
-            if (btnMeusDados) {
-                btnMeusDados.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (wrap) wrap.classList.remove('open');
-                    if (modal) {
-                        modal.classList.add('show');
-                        modal.setAttribute('aria-hidden', 'false');
-                    }
-                });
-            }
-
-            function fecharModalMeusDados() {
-                if (modal) {
-                    modal.classList.remove('show');
-                    modal.setAttribute('aria-hidden', 'true');
-                }
-            }
-
-            if (btnFechar) btnFechar.addEventListener('click', fecharModalMeusDados);
-            if (modal) {
-                modal.addEventListener('click', function(e) {
-                    if (e.target === modal) fecharModalMeusDados();
-                });
-            }
+            if (btnFechar) btnFechar.addEventListener('click', fechar);
+            if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) fechar(); });
         })();
     </script>
 

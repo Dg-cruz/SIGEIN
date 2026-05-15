@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Category
-from shared_templates import templates
+from templating import templates
 from starlette.status import HTTP_302_FOUND
 
 router = APIRouter(prefix="/categories", tags=["Categorias"])
