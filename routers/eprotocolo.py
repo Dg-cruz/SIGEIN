@@ -6,6 +6,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 from database import get_db
 from dependencies import get_current_user
+from security import safe_redirect_url
 from templating import templates
 from models import Estado, Municipio, User, Processo, ProcessoAssinante, Tramite, Orgao, Unidade, Grupo, Assunto, Subassunto
 from datetime import datetime
@@ -975,12 +976,16 @@ async def processo_arquivar(
     if not processo:
         return RedirectResponse("/eprotocolo/processos/caixa", status_code=303)
     form = await request.form()
-    redirect_to = form.get("redirect") or request.query_params.get("redirect") or "/eprotocolo/processos/caixa?aba=arquivados"
+    redirect_candidate = form.get("redirect") or request.query_params.get("redirect")
+    redirect_to = safe_redirect_url(
+        str(redirect_candidate) if redirect_candidate is not None else None,
+        "/eprotocolo/processos/caixa?aba=arquivados",
+    )
     processo.arquivado = True
     processo.arquivado_at = datetime.utcnow()
     processo.arquivado_por_id = u.id
     db.commit()
-    return RedirectResponse(str(redirect_to), status_code=303)
+    return RedirectResponse(redirect_to, status_code=303)
 
 
 @router.post("/processos/{processo_id:int}/desarquivar")
@@ -997,12 +1002,16 @@ async def processo_desarquivar(
     if not processo:
         return RedirectResponse("/eprotocolo/processos/caixa", status_code=303)
     form = await request.form()
-    redirect_to = form.get("redirect") or request.query_params.get("redirect") or "/eprotocolo/processos/caixa"
+    redirect_candidate = form.get("redirect") or request.query_params.get("redirect")
+    redirect_to = safe_redirect_url(
+        str(redirect_candidate) if redirect_candidate is not None else None,
+        "/eprotocolo/processos/caixa",
+    )
     processo.arquivado = False
     processo.arquivado_at = None
     processo.arquivado_por_id = None
     db.commit()
-    return RedirectResponse(str(redirect_to), status_code=303)
+    return RedirectResponse(redirect_to, status_code=303)
 
 
 @router.get("/processos/arquivados")

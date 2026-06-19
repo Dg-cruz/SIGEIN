@@ -1,4 +1,5 @@
 import hashlib
+import re
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(
@@ -26,3 +27,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     # Se for SHA-256 antigo
     sha256_hash = hashlib.sha256(plain_password.encode()).hexdigest()
     return sha256_hash == hashed_password
+
+
+def safe_redirect_url(url: str | None, default: str = "/") -> str:
+    """Permite apenas redirecionamentos relativos internos (evita open redirect)."""
+    if not url:
+        return default
+    candidate = str(url).strip()
+    if not candidate.startswith("/") or candidate.startswith("//"):
+        return default
+    if re.match(r"^/\\", candidate):
+        return default
+    return candidate

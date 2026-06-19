@@ -15,7 +15,6 @@ from models import (
 )
 from templating import templates
 from ui_alerts import alert_back
-from services.stock_service import StockService
 from datetime import datetime
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -571,16 +570,6 @@ async def add_product(
             )
             db.add(item)
             items_criados.append(item)
-        db.flush()
-        for item in items_criados:
-            StockService.registrar_entrada_cadastro(
-                db,
-                product,
-                user_obj.id,
-                unidade.id,
-                quantidade=1,
-                item_id=item.id,
-            )
         db.commit()
         registrar_log(
             db,
@@ -627,15 +616,6 @@ async def add_product(
             observacao=observacao or f"Estoque inicial: {quantidade}",
         )
         db.add(item)
-        db.flush()
-        StockService.registrar_entrada_cadastro(
-            db,
-            product,
-            user_obj.id,
-            unidade.id,
-            quantidade=quantidade,
-            item_id=item.id,
-        )
         product.quantidade = quantidade
         product.quantidade_minima = quantidade_minima
         db.commit()

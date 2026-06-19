@@ -7,10 +7,13 @@ mas o sistema usa a tabela "unidades" para unidades administrativas.
 Execute: python fix_movements_fk.py
 """
 import psycopg2
+import re
+from psycopg2 import sql
 from database import SQLALCHEMY_DATABASE_URL
 
 # Converte URL SQLAlchemy para conexão psycopg2
 url = SQLALCHEMY_DATABASE_URL.replace("postgresql+psycopg2://", "postgresql://")
+_CONSTRAINT_NAME = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 def main():
     conn = psycopg2.connect(url)
@@ -26,7 +29,13 @@ def main():
             AND a.attname IN ('unit_origem_id', 'unit_destino_id');
         """)
         for (conname,) in cur.fetchall():
-            cur.execute(f'ALTER TABLE movements DROP CONSTRAINT IF EXISTS "{conname}"')
+            if not _CONSTRAINT_NAME.match(conname):
+                raise ValueError(f"Nome de constraint inválido: {conname}")
+            cur.execute(
+                sql.SQL('ALTER TABLE movements DROP CONSTRAINT IF EXISTS {}').format(
+                    sql.Identifier(conname)
+                )
+            )
             print(f"  Removida: {conname}")
 
         # 2. Adicionar novas FKs apontando para unidades (só se não existir)

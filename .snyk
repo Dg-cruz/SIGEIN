@@ -1,0 +1,7 @@
+# Snyk (https://snyk.io) policy file
+exclude:
+  global:
+    - node_modules/**
+    - .venv/**
+    - venv/**
+    - __pycache__/**

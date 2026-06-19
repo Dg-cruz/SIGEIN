@@ -13,12 +13,14 @@ O CSV deve ter:
 Se o código já existir, a descrição é atualizada.
 """
 
+import argparse
 import csv
 import sys
 import os
 
 # Adiciona o diretório do projeto ao path para importar database e models
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, PROJECT_ROOT)
 
 from database import SessionLocal
 from models import ProdutoSegem
@@ -41,27 +43,46 @@ def normalizar_header(campo: str) -> str:
     return s
 
 
+def resolve_csv_path(raw_path: str) -> str:
+    """Resolve CSV apenas por nome de arquivo dentro do projeto (evita path traversal)."""
+    if not raw_path or "\0" in raw_path:
+        raise ValueError("Caminho de arquivo inválido.")
+    filename = os.path.basename(raw_path.replace("\\", "/"))
+    if not filename or filename in (".", "..") or ".." in filename:
+        raise ValueError("Nome de arquivo inválido.")
+
+    allowed_root = os.path.realpath(PROJECT_ROOT)
+    search_dirs = [
+        allowed_root,
+        os.path.join(allowed_root, "importacao"),
+        os.path.join(allowed_root, "data"),
+    ]
+    for base_dir in search_dirs:
+        candidate = os.path.realpath(os.path.join(base_dir, filename))
+        if not candidate.startswith(allowed_root + os.sep) and candidate != allowed_root:
+            continue
+        if os.path.isfile(candidate):
+            return candidate
+    raise FileNotFoundError(f"Arquivo não encontrado: {filename}")
+
+
 def main():
-    if len(sys.argv) < 2:
-        print("Uso: python carga_produtos_segem.py <arquivo.csv> [--encoding ENCODING]")
-        print("Exemplo: python carga_produtos_segem.py planilha.csv")
-        print("         python carga_produtos_segem.py planilha.csv --encoding latin-1")
+    parser = argparse.ArgumentParser(description="Importa planilha CSV para produtos_segem.")
+    parser.add_argument("csv_file", help="Nome ou caminho relativo do arquivo CSV")
+    parser.add_argument("--encoding", default="utf-8", help="Encoding do arquivo (padrão: utf-8)")
+    args = parser.parse_args()
+
+    try:
+        csv_path = resolve_csv_path(args.csv_file)
+    except (ValueError, FileNotFoundError) as e:
+        print(str(e))
         sys.exit(1)
 
-    path = sys.argv[1]
-    encoding = "utf-8"
-    if "--encoding" in sys.argv:
-        idx = sys.argv.index("--encoding")
-        if idx + 1 < len(sys.argv):
-            encoding = sys.argv[idx + 1]
-
-    if not os.path.isfile(path):
-        print(f"Arquivo não encontrado: {path}")
-        sys.exit(1)
+    encoding = args.encoding
 
     db = SessionLocal()
     try:
-        with open(path, "r", encoding=encoding, newline="") as f:
+        with open(csv_path, "r", encoding=encoding, newline="") as f:
             # Ler primeira linha para detectar delimitador e cabeçalho
             first = f.readline()
             delim = detect_delimiter(first)

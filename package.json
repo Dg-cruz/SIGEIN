@@ -1,0 +1,26 @@
+{
+  "name": "sigen",
+  "version": "1.0.0",
+  "description": "![SIGEN](https://img.shields.io/badge/SIGEN-v1.0-0d6efd)\r ![FastAPI](https://img.shields.io/badge/FastAPI-✨-00a7c4)\r ![Jinja2](https://img.shields.io/badge/Jinja2-Templates-ff5b5b)\r ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-DB-336791)",
+  "main": "index.js",
+  "scripts": {
+    "snyk:test": "snyk test --file=requirements.txt",
+    "snyk:code": "snyk code test",
+    "snyk:scan": "powershell -ExecutionPolicy Bypass -File ./snyk-scan.ps1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ntigcms/SIGEIN.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ntigcms/SIGEIN/issues"
+  },
+  "homepage": "https://github.com/ntigcms/SIGEIN#readme",
+  "devDependencies": {
+    "snyk": "^1.1305.1"
+  }
+}

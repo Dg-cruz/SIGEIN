@@ -569,12 +569,15 @@ $(function () {
         },
       },
       {
-        data: "controla_por_serie",
-        render: function (d, type) {
-          var label = d ? "Sim" : "Não";
-          if (type === "filter" || type === "sort" || type === "type") return label;
-          var cls = d ? "mod-badge mod-status--ok" : "mod-badge mod-status--info";
-          return '<span class="' + cls + '">' + label + "</span>";
+        data: function (row) {
+          return row.controla_por_serie ? "Sim" : "Não";
+        },
+        render: function (d, type, row) {
+          if (type === "filter" || type === "sort" || type === "type") return d;
+          var cls = row.controla_por_serie
+            ? "mod-badge mod-status--ok"
+            : "mod-badge mod-status--info";
+          return '<span class="' + cls + '">' + d + "</span>";
         },
       },
       {

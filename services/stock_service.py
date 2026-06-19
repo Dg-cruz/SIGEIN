@@ -177,33 +177,3 @@ class StockService:
         db.commit()
 
         return movement
-
-    @staticmethod
-    def registrar_entrada_cadastro(
-        db: Session,
-        product: Product,
-        user_id: int,
-        unit_id: int,
-        quantidade: int = 1,
-        item_id: int | None = None,
-        observacao: str | None = None,
-    ) -> Movement:
-        """
-        Registra movimentação ENTRADA no cadastro do produto.
-        Não altera estoque/itens — o cadastro já criou saldo ou itens físicos.
-        """
-        _validar_unidade_existe(db, unit_id, "destino")
-
-        movement = Movement(
-            product_id=product.id,
-            item_id=item_id,
-            unit_origem_id=unit_id,
-            unit_destino_id=unit_id,
-            quantidade=quantidade,
-            tipo="ENTRADA",
-            observacao=observacao or "Entrada automática — cadastro do produto",
-            user_id=user_id,
-            data=datetime.utcnow(),
-        )
-        db.add(movement)
-        return movement

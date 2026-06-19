@@ -44,6 +44,7 @@
       {% set serie = (m.item.num_tombo_ou_serie or '').strip() if m.item and not m.item.tombo and m.item.num_tombo_ou_serie else '' %}
       {% set tombo = (m.item.num_tombo_ou_serie or '').strip() if m.item and m.item.tombo and m.item.num_tombo_ou_serie else '' %}
       {% set usuario = (m.user.nome or '').strip() if m.user else '' %}
+      {% set data_filtro = m.data.strftime('%d/%m/%Y') %}
       {% set data_txt = m.data.strftime('%d/%m/%Y %H:%M') %}
       <tr>
         <td>{{ m.id }}</td>
@@ -54,7 +55,7 @@
         <td data-search="{{ tombo }}">{{ tombo if tombo else '—' }}</td>
         <td data-search="{{ m.tipo }}">{{ m.tipo }}</td>
         <td data-search="{{ usuario }}">{{ usuario if usuario else '—' }}</td>
-        <td class="data-utc" data-utc="{{ m.data.isoformat() }}" data-search="{{ data_txt }}">{{ data_txt }}</td>
+        <td class="data-utc" data-utc="{{ m.data.isoformat() }}" data-search="{{ data_filtro }}">{{ data_txt }}</td>
         <td>{{ mod.actions("/movements/edit/" ~ m.id, m.id, "openMovementView(" ~ m.id ~ ")") }}</td>
       </tr>
       {% endfor %}

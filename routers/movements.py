@@ -132,8 +132,17 @@ def listar_movimentacoes(
     )
     tipos_mov = sorted({_filtro_label(m.tipo) for m in movements if m.tipo})
     usuarios = sorted({_filtro_label(m.user.nome) for m in movements if m.user})
+    datas_map = {}
+    for m in movements:
+        if not m.data:
+            continue
+        chave = m.data.strftime("%d/%m/%Y")
+        if chave not in datas_map:
+            datas_map[chave] = m.data
     datas = sorted(
-        {m.data.strftime("%d/%m/%Y %H:%M") for m in movements if m.data}
+        datas_map.keys(),
+        key=lambda k: datas_map[k],
+        reverse=True,
     )
 
     return templates.TemplateResponse(
