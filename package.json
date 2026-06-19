@@ -10,16 +10,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ntigcms/SIGEIN.git"
+    "url": "git+https://github.com/Dg-cruz/SIGEIN.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/ntigcms/SIGEIN/issues"
+    "url": "https://github.com/Dg-cruz/SIGEIN/issues"
   },
-  "homepage": "https://github.com/ntigcms/SIGEIN#readme",
+  "homepage": "https://github.com/Dg-cruz/SIGEIN#readme",
   "devDependencies": {
     "snyk": "^1.1305.1"
   }
