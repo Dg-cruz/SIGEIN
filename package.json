@@ -6,7 +6,9 @@
   "scripts": {
     "snyk:test": "snyk test --file=requirements.txt",
     "snyk:code": "snyk code test",
-    "snyk:scan": "powershell -ExecutionPolicy Bypass -File ./snyk-scan.ps1"
+    "snyk:scan": "powershell -ExecutionPolicy Bypass -File ./snyk-scan.ps1",
+    "vercel:dev": "vercel dev",
+    "vercel:deploy": "vercel --prod"
   },
   "repository": {
     "type": "git",
@@ -21,6 +23,7 @@
   },
   "homepage": "https://github.com/Dg-cruz/SIGEIN#readme",
   "devDependencies": {
-    "snyk": "^1.1305.1"
+    "snyk": "^1.1305.1",
+    "vercel": "^41.7.8"
   }
 }

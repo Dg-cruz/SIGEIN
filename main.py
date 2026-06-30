@@ -16,6 +16,7 @@ app = FastAPI()
 # 2. ADICIONAR MIDDLEWARES (ANTES DE TUDO)
 # ========================================
 SECRET_KEY = os.getenv("SECRET_KEY", "sua-chave-secreta-aqui-mude-em-producao")
+IS_VERCEL = os.getenv("VERCEL") == "1"
 
 # Ordem (interno → externo): Auth → Session → Audit
 # Na requisição: Audit → Session (popula sessão) → Auth (valida login) → rotas
@@ -26,7 +27,7 @@ app.add_middleware(
     session_cookie="session",
     max_age=None,
     same_site="lax",
-    https_only=False,
+    https_only=IS_VERCEL,
 )
 
 # ✅ MultiTenantMiddleware DEPOIS
@@ -49,7 +50,8 @@ app.state.templates = templates
 # 5. DATABASE (import models para registrar todas as tabelas)
 # ========================================
 import models  # noqa: F401 - registra modelos no Base.metadata
-Base.metadata.create_all(bind=engine)
+if not IS_VERCEL or os.getenv("RUN_DB_MIGRATIONS") == "1":
+    Base.metadata.create_all(bind=engine)
 
 # ========================================
 # 6. ROUTERS (POR ÚLTIMO)
