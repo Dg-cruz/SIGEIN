@@ -146,12 +146,12 @@ def add_unit(
     # Valida responsável: não pode ter dígitos
     resp_clean = (responsavel or "").strip()
     if resp_clean and re.search(r"\d", resp_clean):
-        return alert_back("O campo Responsável não pode conter números.")
+        return alert_back(request, "O campo Responsável não pode conter números.")
 
     # Valida ramal: apenas números
     ramal_clean = (ramal or "").strip()
     if ramal_clean and not ramal_clean.isdigit():
-        return alert_back("O campo Ramal deve conter apenas números.")
+        return alert_back(request, "O campo Ramal deve conter apenas números.")
 
     nova_unidade = Unidade(
         nome=nome,
@@ -222,12 +222,12 @@ def edit_unit(
     # Valida responsável
     resp_clean = (responsavel or "").strip()
     if resp_clean and re.search(r"\d", resp_clean):
-        return alert_back("O campo Responsável não pode conter números.")
+        return alert_back(request, "O campo Responsável não pode conter números.")
 
     # Valida ramal
     ramal_clean = (ramal or "").strip()
     if ramal_clean and not ramal_clean.isdigit():
-        return alert_back("O campo Ramal deve conter apenas números.")
+        return alert_back(request, "O campo Ramal deve conter apenas números.")
 
     unidade = db.query(Unidade).filter(Unidade.id == unit_id).first()
     if unidade:

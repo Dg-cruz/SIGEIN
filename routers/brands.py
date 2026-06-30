@@ -142,10 +142,10 @@ def add_brand(
 
     nome_limpo = _normalize_brand_nome(nome)
     if not nome_limpo:
-        return alert_back("Informe o nome da marca.")
+        return alert_back(request, "Informe o nome da marca.")
 
     if _marca_nome_duplicada(db, nome_limpo):
-        return alert_back(f'A marca "{nome_limpo}" já está cadastrada.')
+        return alert_back(request, f'A marca "{nome_limpo}" já está cadastrada.')
 
     ip = request.client.host
     nova_marca = Brand(nome=nome_limpo)
@@ -156,7 +156,7 @@ def add_brand(
         db.commit()
     except IntegrityError:
         db.rollback()
-        return alert_back(f'A marca "{nome_limpo}" já está cadastrada.')
+        return alert_back(request, f'A marca "{nome_limpo}" já está cadastrada.')
 
     registrar_log(db, usuario=user, acao=f"Cadastrou marca: {nome_limpo}", ip=ip)
     return RedirectResponse("/brands", status_code=HTTP_302_FOUND)
@@ -215,20 +215,20 @@ def edit_brand(
 
     nome_limpo = _normalize_brand_nome(nome)
     if not nome_limpo:
-        return alert_back("Informe o nome da marca.")
+        return alert_back(request, "Informe o nome da marca.")
 
     ip = request.client.host
     marca = db.query(Brand).filter(Brand.id == brand_id).first()
     if marca:
         if _marca_nome_duplicada(db, nome_limpo, exclude_id=brand_id):
-            return alert_back(f'A marca "{nome_limpo}" já está cadastrada.')
+            return alert_back(request, f'A marca "{nome_limpo}" já está cadastrada.')
         marca.nome = nome_limpo
         try:
             _sync_brand_types(db, marca, ids)
             db.commit()
         except IntegrityError:
             db.rollback()
-            return alert_back(f'A marca "{nome_limpo}" já está cadastrada.')
+            return alert_back(request, f'A marca "{nome_limpo}" já está cadastrada.')
         registrar_log(db, usuario=user, acao=f"Editou marca ID {brand_id}", ip=ip)
 
     return RedirectResponse("/brands", status_code=HTTP_302_FOUND)

@@ -105,6 +105,46 @@ def _lotacao_from_unit(lotacao_base: dict, unit) -> dict:
     return lotacao_base
 
 
+def _tombo_serie_tokens(num: str) -> list[str]:
+    """Variantes de um tombo/série para busca (minúsculas)."""
+    raw = (num or "").strip()
+    if not raw:
+        return []
+    variants = [raw]
+    digits = re.sub(r"\D", "", raw)
+    if digits:
+        variants.append(digits)
+        if len(digits) == 6:
+            variants.append(f"{digits[:3]}.{digits[3:]}")
+    tokens: list[str] = []
+    seen: set[str] = set()
+    for variant in variants:
+        key = variant.lower()
+        if key not in seen:
+            seen.add(key)
+            tokens.append(key)
+    return tokens
+
+
+def _build_tombo_index(db: Session) -> dict[str, str]:
+    """Mapa product_id → tokens de tombo/série (consulta direta em items)."""
+    index: dict[str, str] = {}
+    rows = (
+        db.query(Item.product_id, Item.num_tombo_ou_serie)
+        .filter(Item.num_tombo_ou_serie.isnot(None))
+        .filter(Item.num_tombo_ou_serie != "")
+        .all()
+    )
+    for product_id, num in rows:
+        chunk = " ".join(_tombo_serie_tokens(num))
+        if not chunk:
+            continue
+        pid = str(product_id)
+        prev = index.get(pid, "")
+        index[pid] = f"{prev} {chunk}".strip() if prev else chunk
+    return index
+
+
 def _product_list_display(product: Product, db: Session = None) -> dict:
     """Dados agregados para exibição na grid (unidade/data/valor sem repetição)."""
     data_aquisicao = "—"
@@ -161,6 +201,7 @@ def list_products(request: Request, db: Session = Depends(get_db), user: str = D
         {"product": p, **_product_list_display(p, db)}
         for p in products
     ]
+    tombo_index = _build_tombo_index(db)
 
     return templates.TemplateResponse(
         "products_list.html",
@@ -171,6 +212,7 @@ def list_products(request: Request, db: Session = Depends(get_db), user: str = D
             "tipos": tipos,
             "marcas": marcas,
             "categorias": categorias,
+            "tombo_index": tombo_index,
             "hide_app_header": True,
         }
     )
@@ -470,7 +512,7 @@ async def add_product(
     observacao = form_data.get("observacao") or None
 
     if not type_id or not brand_id:
-        return alert_back("Tipo e Marca são obrigatórios.")
+        return alert_back(request, "Tipo e Marca são obrigatórios.")
 
     user_obj = _user_obj(db, user)
     if not user_obj:
@@ -478,7 +520,7 @@ async def add_product(
 
     target_unit_id = unit_id_serie if controla_por_serie else unit_id
     if not target_unit_id:
-        return alert_back("Unidade é obrigatória.")
+        return alert_back(request, "Unidade é obrigatória.")
 
     unidade = (
         db.query(Unidade)
@@ -487,14 +529,14 @@ async def add_product(
         .first()
     )
     if not unidade or not unidade.orgao or not unidade.orgao.municipio:
-        return alert_back("Unidade inválida.")
+        return alert_back(request, "Unidade inválida.")
     if not _unidade_scope_ok(db, user_obj, unidade):
-        return alert_back("Você não tem permissão para cadastrar nesta unidade.", status_code=403)
+        return alert_back(request, "Você não tem permissão para cadastrar nesta unidade.", status_code=403)
 
     tipo = db.query(EquipmentType).filter(EquipmentType.id == type_id).first()
     marca = db.query(Brand).filter(Brand.id == brand_id).first()
     if not marca or not _brand_valid_for_type(db, brand_id, type_id):
-        return alert_back("Marca inválida para o tipo selecionado.")
+        return alert_back(request, "Marca inválida para o tipo selecionado.")
     nome_partes = [tipo.nome if tipo else "", marca.nome if marca else "", model or ""]
     name = " ".join(filter(None, nome_partes)) or "Produto sem nome"
 
@@ -504,10 +546,10 @@ async def add_product(
     if controla_por_serie:
         pares_numero = _coletar_pares_numero(numero, tipo_numero)
         if not pares_numero:
-            return alert_back("Informe ao menos um número de tombo ou de série.")
+            return alert_back(request, "Informe ao menos um número de tombo ou de série.")
         err_num = _validar_numeros_itens(db, pares_numero)
         if err_num:
-            return alert_back(err_num)
+            return alert_back(request, err_num)
 
     product = Product(
         name=name,
@@ -549,7 +591,7 @@ async def add_product(
             is_tombo = (str(tipo_val).lower() == "tombo")
             num_norm = _normalize_numero_item(is_tombo, num_str)
             if not num_norm:
-                return alert_back(
+                return alert_back(request,
                     "Número do tombo inválido. Use o formato 000.000 (6 dígitos)."
                 )
             estado_i = _parse_int(estado_id_list[i]) if i < len(estado_id_list) else estado_id
@@ -751,7 +793,7 @@ async def edit_product(
     tipo = db.query(EquipmentType).filter(EquipmentType.id == type_id).first()
     marca = db.query(Brand).filter(Brand.id == brand_id).first()
     if not marca or not _brand_valid_for_type(db, brand_id, type_id):
-        return alert_back("Marca inválida para o tipo selecionado.")
+        return alert_back(request, "Marca inválida para o tipo selecionado.")
     nome_partes = []
     if tipo:
         nome_partes.append(tipo.nome)
@@ -797,15 +839,15 @@ async def edit_product(
         status_list = form_data.getlist("status[]")
 
         if not unit_id_int:
-            return alert_back("Selecione a Unidade antes de salvar.")
+            return alert_back(request, "Selecione a Unidade antes de salvar.")
 
         existing_items = db.query(Item).filter(Item.product_id == product.id).order_by(Item.id).all()
         pares = _coletar_pares_numero(numeros, tipo_numeros)
         if not pares:
-            return alert_back("Informe ao menos um número de tombo ou de série.")
+            return alert_back(request, "Informe ao menos um número de tombo ou de série.")
         err_num = _validar_numeros_itens(db, pares, product_id=product.id)
         if err_num:
-            return alert_back(err_num)
+            return alert_back(request, err_num)
 
         # Primeiro libera num_tombo_ou_serie nos itens existentes (evita UniqueViolation ao trocar ordem)
         for idx in range(min(len(pares), len(existing_items))):
@@ -815,7 +857,7 @@ async def edit_product(
         for idx, (is_tombo, num_str) in enumerate(pares):
             num_norm = _normalize_numero_item(is_tombo, num_str)
             if not num_norm:
-                return alert_back(
+                return alert_back(request,
                     "Número do tombo inválido. Use o formato 000.000 (6 dígitos)."
                 )
             estado_idx = _parse_int(estado_id_list[idx]) if idx < len(estado_id_list) else estado_int
@@ -860,7 +902,7 @@ async def edit_product(
         item = db.query(Item).filter(Item.product_id == product.id).first()
         if not item:
             if not unit_id_int:
-                return alert_back("Selecione a Unidade antes de salvar o produto.")
+                return alert_back(request, "Selecione a Unidade antes de salvar o produto.")
             item = Item(
                 product_id=product.id,
                 municipio_id=product.municipio_id,
@@ -875,7 +917,7 @@ async def edit_product(
             if unit_id_int is not None:
                 item.unit_id = unit_id_int
             if not item.unit_id:
-                return alert_back(
+                return alert_back(request,
                     "Item associado ao produto está sem Unidade. Defina uma Unidade e tente novamente."
                 )
 
@@ -890,7 +932,7 @@ async def edit_product(
         db.add(item)
 
         if not unit_id_int:
-            return alert_back("Selecione a Unidade antes de salvar o produto.")
+            return alert_back(request, "Selecione a Unidade antes de salvar o produto.")
 
         stock_row = (
             db.query(Stock)

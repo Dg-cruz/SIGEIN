@@ -127,6 +127,8 @@ def inject_user_context(request: Request) -> dict[str, Any]:
     else:
         saudacao = "Boa noite"
 
+    sigen_alert = request.session.pop("sigen_alert", None)
+
     return {
         "current_user_email": email,
         "current_user_nome": nome,
@@ -136,6 +138,7 @@ def inject_user_context(request: Request) -> dict[str, Any]:
         "current_user_perfil_label": PERFIL_LABELS.get(perfil, perfil),
         "user_saudacao": saudacao,
         "is_logged_in": bool(email),
+        "sigen_alert": sigen_alert,
     }
 
 

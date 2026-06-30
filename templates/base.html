@@ -690,6 +690,15 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{{ url_for('static', path='js/sigen-alerts.js') }}?v=20260527"></script>
+    <script src="{{ url_for('static', path='js/sigen-alerts.js') }}?v=20260630"></script>
+    {% if sigen_alert %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.SIGENAlert) {
+                SIGENAlert.installFlashAlert({{ sigen_alert | tojson }});
+            }
+        });
+    </script>
+    {% endif %}
 </body>
 </html>

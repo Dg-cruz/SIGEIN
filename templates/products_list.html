@@ -30,6 +30,8 @@
 
   {{ mod.filter_checkbox_options("Categoria", 5, "categoria", categorias) }}
 
+  {{ mod.filter_text("Tombo/Série", 0, "Digite tombo ou série...", "filter-tombo-serie") }}
+
   {{ mod.filters_end() }}
 
 
@@ -329,6 +331,49 @@ $(function () {
 
   var tableSettings = table.settings()[0];
   tableSettings._sigenColFilters = tableSettings._sigenColFilters || {};
+  tableSettings._sigenTomboSerieQuery = "";
+  tableSettings._sigenTomboIndex = {{ tombo_index | tojson }};
+
+  function tomboSerieQueryVariants(query) {
+    var q = String(query || "").trim().toLowerCase();
+    if (!q) return [];
+    var variants = [q];
+    var digits = q.replace(/\D/g, "");
+    if (digits && digits !== q) variants.push(digits);
+    if (digits.length === 6) {
+      variants.push(digits.slice(0, 3) + "." + digits.slice(3));
+    }
+    return variants;
+  }
+
+  function rowMatchesTomboSerie(rowData, index, query) {
+    if (!query) return true;
+    if (!index) return true;
+    var productId = String(rowData[1] || "")
+      .replace(/<[^>]*>/g, "")
+      .trim();
+    var haystack = index[productId] || "";
+    if (!haystack) return false;
+    var variants = tomboSerieQueryVariants(query);
+    for (var i = 0; i < variants.length; i++) {
+      if (haystack.indexOf(variants[i]) !== -1) return true;
+    }
+    return false;
+  }
+
+  if (!window._sigenProductsTomboSerieFilterRegistered) {
+    window._sigenProductsTomboSerieFilterRegistered = true;
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+      var query = (settings._sigenTomboSerieQuery || "").trim();
+      if (!query || !settings._sigenTomboIndex) return true;
+      return rowMatchesTomboSerie(data, settings._sigenTomboIndex, query);
+    });
+  }
+
+  $("#filter-tombo-serie").on("keyup change", function () {
+    tableSettings._sigenTomboSerieQuery = $(this).val();
+    table.draw();
+  });
 
 
 
@@ -486,6 +531,8 @@ $(function () {
   });
 
   function clearProductsFilters() {
+    $("#filter-tombo-serie").val("");
+    tableSettings._sigenTomboSerieQuery = "";
     $(".mod-page .search-container[data-filter]").each(function () {
       var resetFn = $(this).data("reset");
       if (typeof resetFn === "function") {
