@@ -84,6 +84,8 @@ class StockService:
         if unit_destino_id:
             _validar_unidade_existe(db, unit_destino_id, "destino")
 
+        unit_origem_real = item.unit_id
+
         if tipo == "TRANSFERENCIA":
             if not unit_destino_id:
                 raise Exception("Unidade destino obrigatória")
@@ -95,7 +97,7 @@ class StockService:
         movement = Movement(
             product_id=product.id,
             item_id=item.id,
-            unit_origem_id=item.unit_id,
+            unit_origem_id=unit_origem_real,
             unit_destino_id=unit_destino_id,
             quantidade=1,
             tipo=tipo,

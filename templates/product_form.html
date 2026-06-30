@@ -6,7 +6,8 @@
 <div class="container">
     <h2>{{ 'Editar' if action == 'edit' else 'Cadastrar' }} Produto</h2>
 
-    <form method="post" id="product-form">
+    <form method="post" id="product-form" enctype="multipart/form-data" data-sigen-no-ajax="true"
+          action="{% if action == 'edit' %}/products/edit/{{ product.id }}{% else %}/products/add{% endif %}">
         
         <!-- DADOS BÁSICOS DO PRODUTO -->
 <fieldset>
@@ -355,6 +356,37 @@
             </div>
         </fieldset>
 
+        <fieldset id="secao-anexos">
+            <legend>Arquivos</legend>
+            <p class="anexos-hint">Formatos aceitos: PDF, PNG e JPEG. Tamanho máximo de 10 MB por arquivo.</p>
+
+            {% if attachments %}
+            <div class="anexos-existentes">
+                <p class="anexos-subtitle">Arquivos já enviados</p>
+                <ul class="anexos-lista">
+                    {% for att in attachments %}
+                    <li class="anexo-item">
+                        <a href="/products/attachments/{{ att.id }}" target="_blank" rel="noopener" class="anexo-link">
+                            <i class="fas fa-paperclip"></i> {{ att.filename }}
+                        </a>
+                        <span class="anexo-meta">{{ format_file_size(att.size_bytes) }}</span>
+                        <label class="anexo-remover">
+                            <input type="checkbox" name="remover_anexo" value="{{ att.id }}">
+                            Remover
+                        </label>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="product-anexos">{% if action == 'edit' %}Adicionar arquivos{% else %}Enviar arquivos{% endif %}</label>
+                <input type="file" name="anexos" id="product-anexos" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" multiple>
+            </div>
+            <p id="anexos-erro" class="anexos-erro" style="display:none;"></p>
+        </fieldset>
+
         <div class="buttons">
             <button type="submit" class="btn-submit">{{ 'Atualizar' if action == 'edit' else 'Salvar' }}</button>
             <a href="/products" class="btn-cancel">Cancelar</a>
@@ -493,6 +525,68 @@ legend {
 
 .btn-cancel:hover {
     background: #f1f5f9;
+}
+
+.anexos-hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.anexos-subtitle {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.anexos-lista {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+}
+
+.anexo-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: #fff;
+    margin-bottom: 8px;
+}
+
+.anexo-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.anexo-link:hover {
+    text-decoration: underline;
+}
+
+.anexo-meta {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.anexo-remover {
+    margin-left: auto;
+    font-size: 13px;
+    color: #b91c1c;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.anexos-erro {
+    margin: 8px 0 0;
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .buttons {
@@ -887,10 +981,57 @@ document.addEventListener('DOMContentLoaded', function() {
     const productForm = document.getElementById('product-form');
     if (productForm) {
         productForm.addEventListener('submit', function (e) {
-            if (!validarNumerosFormulario()) e.preventDefault();
+            if (!validarNumerosFormulario()) {
+                e.preventDefault();
+                return;
+            }
+            if (!validarAnexosFormulario()) {
+                e.preventDefault();
+            }
         });
     }
 });
+
+function validarAnexosFormulario() {
+    const input = document.getElementById('product-anexos');
+    const erroEl = document.getElementById('anexos-erro');
+    if (!input) return true;
+
+    const maxBytes = 10 * 1024 * 1024;
+    const allowedExt = ['.pdf', '.png', '.jpg', '.jpeg'];
+    const files = Array.from(input.files || []);
+
+    for (const file of files) {
+        const name = (file.name || '').toLowerCase();
+        const ext = name.includes('.') ? name.slice(name.lastIndexOf('.')) : '';
+        if (!allowedExt.includes(ext)) {
+            if (erroEl) {
+                erroEl.textContent = 'Arquivo "' + file.name + '" não permitido. Use PDF, PNG ou JPEG.';
+                erroEl.style.display = 'block';
+            } else if (window.SIGENAlert) {
+                SIGENAlert.error('Arquivo "' + file.name + '" não permitido. Use PDF, PNG ou JPEG.');
+            }
+            input.focus();
+            return false;
+        }
+        if (file.size > maxBytes) {
+            if (erroEl) {
+                erroEl.textContent = 'Arquivo "' + file.name + '" excede o limite de 10 MB.';
+                erroEl.style.display = 'block';
+            } else if (window.SIGENAlert) {
+                SIGENAlert.error('Arquivo "' + file.name + '" excede o limite de 10 MB.');
+            }
+            input.focus();
+            return false;
+        }
+    }
+
+    if (erroEl) {
+        erroEl.textContent = '';
+        erroEl.style.display = 'none';
+    }
+    return true;
+}
 </script>
 
 <script>

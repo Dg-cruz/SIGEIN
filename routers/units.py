@@ -29,6 +29,18 @@ from ui_alerts import alert_back
 router = APIRouter(prefix="/units", tags=["Unidades Administrativas"])
 
 
+def _title_case_words(value: str) -> str:
+    """Normaliza texto: minúsculas com a primeira letra de cada palavra em maiúscula."""
+    cleaned = (value or "").strip()
+    if not cleaned:
+        return ""
+    return " ".join(
+        word[:1].upper() + word[1:].lower()
+        for word in cleaned.split()
+        if word
+    )
+
+
 def _perfil_valor(user: User) -> str:
     return user._perfil_valor()
 
@@ -143,8 +155,10 @@ def add_unit(
 
     ip = request.client.host
 
+    nome = _title_case_words(nome)
+
     # Valida responsável: não pode ter dígitos
-    resp_clean = (responsavel or "").strip()
+    resp_clean = _title_case_words(responsavel)
     if resp_clean and re.search(r"\d", resp_clean):
         return alert_back(request, "O campo Responsável não pode conter números.")
 
@@ -219,8 +233,10 @@ def edit_unit(
 
     ip = request.client.host
 
+    nome = _title_case_words(nome)
+
     # Valida responsável
-    resp_clean = (responsavel or "").strip()
+    resp_clean = _title_case_words(responsavel)
     if resp_clean and re.search(r"\d", resp_clean):
         return alert_back(request, "O campo Responsável não pode conter números.")
 

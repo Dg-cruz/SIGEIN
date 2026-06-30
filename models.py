@@ -182,6 +182,26 @@ class Product(Base):
     brand = relationship("Brand")
     items = relationship("Item", back_populates="product", cascade="all, delete-orphan")
     stocks = relationship("Stock", back_populates="product", cascade="all, delete-orphan")
+    attachments = relationship(
+        "ProductAttachment",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )
+
+
+class ProductAttachment(Base):
+    __tablename__ = "product_attachments"
+
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    filename = Column(String(255), nullable=False)
+    stored_name = Column(String(255), nullable=False)
+    content_type = Column(String(100), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"))
+
+    product = relationship("Product", back_populates="attachments")
 
 
 # =====================================================

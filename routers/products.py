@@ -2,7 +2,7 @@ import re
 from typing import Optional
 
 from fastapi import APIRouter, Request, Form, Depends, Query
-from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse, FileResponse
 from starlette.status import HTTP_302_FOUND
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
@@ -12,9 +12,17 @@ from dependencies import get_current_user, registrar_log
 from models import (
     Product, EquipmentType, Brand, Category, EquipmentState,
     Item, Movement, Stock, User, Unidade, Orgao, Municipio, Estado,
+    ProductAttachment,
 )
 from templating import templates
 from ui_alerts import alert_back
+from services.product_attachment_service import (
+    save_product_attachments,
+    remove_product_attachments,
+    delete_all_product_attachments,
+    attachment_file_path,
+    format_file_size,
+)
 from datetime import datetime
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -382,6 +390,8 @@ def add_product_form(request: Request, db: Session = Depends(get_db), user: str 
             "item": None,
             "stock": None,
             "product_items": [],
+            "attachments": [],
+            "format_file_size": format_file_size,
             "user": user,
             "hide_app_header": True,
         }
@@ -474,6 +484,30 @@ def _validar_numeros_itens(
         if outro:
             return f'O número "{num}" já está cadastrado em outro produto.'
 
+    return None
+
+
+async def _sync_product_attachments(
+    request: Request,
+    db: Session,
+    product_id: int,
+    form_data,
+    user_obj: User,
+) -> RedirectResponse | None:
+    """Remove e/ou adiciona anexos. Retorna redirect de erro ou None."""
+    remove_ids = [
+        aid
+        for aid in (_parse_int(v) for v in form_data.getlist("remover_anexo"))
+        if aid
+    ]
+    if remove_ids:
+        remove_product_attachments(db, product_id, remove_ids)
+
+    uploads = form_data.getlist("anexos")
+    err = await save_product_attachments(db, product_id, user_obj.id, uploads)
+    if err:
+        request.session["sigen_alert"] = {"message": err, "icon": "error"}
+        return RedirectResponse(f"/products/edit/{product_id}", status_code=303)
     return None
 
 
@@ -663,6 +697,10 @@ async def add_product(
         db.commit()
         registrar_log(db, usuario=user, acao=f"Cadastrou produto: {product.name}", ip=request.client.host)
 
+    attach_err = await _sync_product_attachments(request, db, product.id, form_data, user_obj)
+    if attach_err:
+        return attach_err
+
     return RedirectResponse("/products", status_code=HTTP_302_FOUND)
 
 
@@ -680,6 +718,7 @@ def edit_product_form(product_id: int, request: Request, db: Session = Depends(g
         joinedload(Product.orgao).joinedload(Orgao.municipio).joinedload(Municipio.estado),
         joinedload(Product.items),
         joinedload(Product.stocks),
+        joinedload(Product.attachments),
     ).filter(Product.id == product_id).first()
     if not product:
         return RedirectResponse("/products")
@@ -727,6 +766,8 @@ def edit_product_form(product_id: int, request: Request, db: Session = Depends(g
     tipos = db.query(EquipmentType).all()
     estados = db.query(EquipmentState).all()
 
+    attachments = sorted(product.attachments or [], key=lambda a: a.created_at or datetime.min, reverse=True)
+
     return templates.TemplateResponse(
         "product_form.html",
         {
@@ -744,6 +785,8 @@ def edit_product_form(product_id: int, request: Request, db: Session = Depends(g
             "item": item,
             "product_items": product_items,
             "stock": stock,
+            "attachments": attachments,
+            "format_file_size": format_file_size,
             "user": user,
             "hide_app_header": True,
         }
@@ -965,6 +1008,11 @@ async def edit_product(
         db.commit()
 
     registrar_log(db, usuario=user, acao=f"Editou produto: {product.name}", ip=request.client.host)
+
+    attach_err = await _sync_product_attachments(request, db, product.id, form_data, user_obj)
+    if attach_err:
+        return attach_err
+
     return RedirectResponse("/products", status_code=HTTP_302_FOUND)
 
 @router.get("/tipos-por-categoria/{category_id}")
@@ -999,6 +1047,34 @@ def get_marcas_por_tipo(
         if extra:
             marcas = sorted(list(marcas) + [extra], key=lambda m: m.nome.lower())
     return [{"id": m.id, "nome": m.nome} for m in marcas]
+
+
+@router.get("/attachments/{attachment_id}")
+def download_product_attachment(
+    attachment_id: int,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if not user:
+        return RedirectResponse("/login")
+
+    attachment = (
+        db.query(ProductAttachment)
+        .filter(ProductAttachment.id == attachment_id)
+        .first()
+    )
+    if not attachment:
+        return RedirectResponse("/products")
+
+    path = attachment_file_path(attachment)
+    if not path.is_file():
+        return RedirectResponse("/products")
+
+    return FileResponse(
+        path,
+        media_type=attachment.content_type,
+        filename=attachment.filename,
+    )
 
 
 # ----------------- DELETE -----------------
@@ -1042,6 +1118,7 @@ def delete_product(product_id: int, request: Request, db: Session = Depends(get_
     nome_produto = product.name
 
     try:
+        delete_all_product_attachments(db, product.id)
         db.query(Stock).filter(Stock.product_id == product.id).delete(
             synchronize_session=False
         )

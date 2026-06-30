@@ -270,7 +270,28 @@ async function carregarModoEdicaoUnidade() {
     {% endif %}
 }
 
-document.addEventListener('DOMContentLoaded', carregarModoEdicaoUnidade);
+document.addEventListener('DOMContentLoaded', () => {
+    carregarModoEdicaoUnidade();
+
+    function titleCaseWords(value) {
+        return (value || '')
+            .trim()
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+    ['nome', 'responsavel'].forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+
+        input.addEventListener('blur', () => {
+            input.value = titleCaseWords(input.value);
+        });
+    });
+});
 </script>
 
 {% endblock %}
