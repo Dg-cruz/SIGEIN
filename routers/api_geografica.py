@@ -1,21 +1,44 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Estado, Municipio, Orgao, Unidade, Grupo, Assunto, Subassunto
+from dependencies import get_current_user, registrar_log
+from models import Estado, Municipio, Orgao, Unidade, Grupo, Assunto, Subassunto, User, PerfilEnum
+from services.ibge_service import IbgeSyncError, ensure_estados, ensure_municipios_estado, sync_geografia_completa
 
 router = APIRouter(prefix="/api", tags=["API Geográfica"])
 
 
+def _require_master(request: Request, db: Session) -> User:
+    email = get_current_user(request)
+    if not email:
+        raise HTTPException(status_code=401, detail="Não autenticado.")
+    user = db.query(User).filter(User.email == email).first()
+    if not user or user._perfil_valor() != PerfilEnum.MASTER.value:
+        raise HTTPException(status_code=403, detail="Apenas MASTER pode executar esta ação.")
+    return user
+
+
 @router.get("/estados")
 def listar_estados(db: Session = Depends(get_db)):
-    """Lista todos os estados"""
+    """Lista todos os estados (sincroniza com IBGE se a tabela estiver vazia)."""
+    try:
+        ensure_estados(db)
+    except IbgeSyncError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
     estados = db.query(Estado).order_by(Estado.nome).all()
     return [{"id": e.id, "nome": e.nome, "uf": e.uf} for e in estados]
 
 
 @router.get("/municipios/{estado_id}")
 def listar_municipios(estado_id: int, db: Session = Depends(get_db)):
-    """Lista municípios de um estado"""
+    """Lista municípios de um estado (sincroniza com IBGE sob demanda)."""
+    try:
+        ensure_estados(db)
+        ensure_municipios_estado(db, estado_id)
+    except IbgeSyncError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
     municipios = (
         db.query(Municipio)
         .filter(Municipio.estado_id == estado_id, Municipio.ativo == True)
@@ -23,6 +46,33 @@ def listar_municipios(estado_id: int, db: Session = Depends(get_db)):
         .all()
     )
     return [{"id": m.id, "nome": m.nome} for m in municipios]
+
+
+@router.post("/sync-ibge")
+def sincronizar_ibge(request: Request, db: Session = Depends(get_db)):
+    """Força ressincronização de estados e municípios com a API do IBGE (somente MASTER)."""
+    user = _require_master(request, db)
+    try:
+        resultado = sync_geografia_completa(db)
+    except IbgeSyncError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    ip = request.client.host if request.client else None
+    registrar_log(
+        db,
+        usuario=user.email,
+        acao="Sincronizou estados e municípios com o IBGE",
+        ip=ip,
+        user_id=user.id,
+    )
+
+    return {
+        "ok": True,
+        "estados": resultado["estados"],
+        "municipios": resultado["municipios"],
+        "total_estados": db.query(Estado).count(),
+        "total_municipios": db.query(Municipio).count(),
+    }
 
 
 @router.get("/orgaos/{municipio_id}")

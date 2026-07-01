@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Geografia IBGE — SIGEIN{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header(
+      "Geografia IBGE",
+      "Estados e municípios usados nos cadastros de usuários e unidades.",
+      show_clear=false
+  ) }}
+
+  <section class="mod-panel">
+    <div class="mod-panel__head">
+      <h2>Situação atual</h2>
+    </div>
+    <div class="mod-panel__body" style="padding: 1.25rem 1.5rem;">
+      <div class="form-row" style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+        <div>
+          <strong id="stat-estados">{{ total_estados }}</strong>
+          <div style="color: var(--mod-muted, #64748b); font-size: 0.9rem;">Estados cadastrados</div>
+        </div>
+        <div>
+          <strong id="stat-municipios">{{ total_municipios }}</strong>
+          <div style="color: var(--mod-muted, #64748b); font-size: 0.9rem;">Municípios cadastrados</div>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 1rem; max-width: 52rem; line-height: 1.5;">
+        Os dados são obtidos da
+        <a href="https://servicodados.ibge.gov.br/api/docs/localidades" target="_blank" rel="noopener noreferrer">API pública do IBGE</a>.
+        A sincronização atualiza nomes e inclui novos municípios sem alterar vínculos existentes (usuários, órgãos, unidades).
+      </p>
+
+      <button type="button" id="btn-sync-ibge" class="mod-btn mod-btn--primary">
+        <i class="fas fa-rotate"></i> Sincronizar com IBGE
+      </button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById("btn-sync-ibge");
+  if (!btn) return;
+
+  btn.addEventListener("click", async function () {
+    var confirmFn = window.SIGENAlert && window.SIGENAlert.confirm
+      ? window.SIGENAlert.confirm.bind(window.SIGENAlert)
+      : function (msg) { return Promise.resolve({ isConfirmed: window.confirm(msg) }); };
+
+    var result = await confirmFn(
+      "Isso consultará a API do IBGE e pode levar alguns minutos. Deseja continuar?",
+      { confirmButtonText: "Sim, sincronizar" }
+    );
+    if (!result.isConfirmed) return;
+
+    btn.disabled = true;
+    var icon = btn.querySelector("i");
+    if (icon) icon.classList.add("fa-spin");
+
+    try {
+      var response = await fetch("/api/sync-ibge", { method: "POST" });
+      var data = await response.json().catch(function () { return {}; });
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Falha ao sincronizar com o IBGE.");
+      }
+
+      document.getElementById("stat-estados").textContent = data.total_estados;
+      document.getElementById("stat-municipios").textContent = data.total_municipios;
+
+      var msg = "Sincronização concluída. "
+        + data.estados + " estado(s) e "
+        + data.municipios + " município(s) alterados ou inseridos.";
+
+      if (window.SIGENAlert && window.SIGENAlert.success) {
+        await window.SIGENAlert.success(msg);
+      } else {
+        window.alert(msg);
+      }
+    } catch (err) {
+      if (window.SIGENAlert && window.SIGENAlert.error) {
+        await window.SIGENAlert.error(err.message || "Erro ao sincronizar.");
+      } else {
+        window.alert(err.message || "Erro ao sincronizar.");
+      }
+    } finally {
+      btn.disabled = false;
+      if (icon) icon.classList.remove("fa-spin");
+    }
+  });
+})();
+</script>
+{% endblock %}

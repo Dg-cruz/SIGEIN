@@ -3,10 +3,17 @@ import models
 from models import PerfilEnum, StatusUsuarioEnum
 from security import hash_password
 from sqlalchemy.exc import IntegrityError
+from services.ibge_service import IbgeSyncError, ensure_estados
 
 models.Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
+
+try:
+    ensure_estados(db)
+    print("[OK] Estados sincronizados com o IBGE.")
+except IbgeSyncError as exc:
+    print(f"[AVISO] Nao foi possivel sincronizar estados com o IBGE: {exc}")
 
 ADMIN_EMAIL = "admin@sigen.local"
 ADMIN_PASSWORD = "1234"

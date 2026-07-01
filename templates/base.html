@@ -391,8 +391,8 @@
 
             <div class="sidebar__section">
                 <span class="sidebar__label">Cadastros</span>
-                <div class="sidebar-submenu{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') %} open{% endif %}" id="sidebarAdmin">
-                    <button type="button" class="sidebar-submenu__btn" aria-expanded="{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') %}true{% else %}false{% endif %}">
+                <div class="sidebar-submenu{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') or path.startswith('/admin/geografia') %} open{% endif %}" id="sidebarAdmin">
+                    <button type="button" class="sidebar-submenu__btn" aria-expanded="{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') or path.startswith('/admin/geografia') %}true{% else %}false{% endif %}">
                         <i class="fas fa-sliders nav-icon"></i>
                         <span>Administração</span>
                         <i class="fas fa-chevron-down sidebar-submenu__caret"></i>
@@ -419,6 +419,12 @@
                                 <i class="fas fa-landmark nav-icon"></i>
                                 <span>Órgãos</span>
                             </a>
+                            {% if perfil_atual == 'master' %}
+                            <a href="/admin/geografia" class="sidebar-nav__link{% if path.startswith('/admin/geografia') %} is-active{% endif %}">
+                                <i class="fas fa-map-location-dot nav-icon"></i>
+                                <span>Geografia IBGE</span>
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

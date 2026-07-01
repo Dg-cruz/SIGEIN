@@ -53,13 +53,25 @@ import models  # noqa: F401 - registra modelos no Base.metadata
 if not IS_VERCEL or os.getenv("RUN_DB_MIGRATIONS") == "1":
     Base.metadata.create_all(bind=engine)
 
+    if os.getenv("SYNC_IBGE_ON_STARTUP", "1") == "1":
+        from database import SessionLocal
+        from services.ibge_service import IbgeSyncError, ensure_estados
+
+        _db = SessionLocal()
+        try:
+            ensure_estados(_db)
+        except IbgeSyncError:
+            pass
+        finally:
+            _db.close()
+
 # ========================================
 # 6. ROUTERS (POR ÚLTIMO)
 # ========================================
 from routers import (
     auth, dashboard, users, units, orgaos, movements, logs, root,
     equipment_types, brands, states, products, stock,
-    categories, eprotocolo, api_geografica, segem
+    categories, eprotocolo, api_geografica, geografia, segem
 )
 
 app.include_router(root.router)
@@ -77,5 +89,6 @@ app.include_router(states.router)
 app.include_router(stock.router)
 app.include_router(eprotocolo.router)
 app.include_router(api_geografica.router)
+app.include_router(geografia.router)
 app.include_router(logs.router)
 app.include_router(segem.router)
