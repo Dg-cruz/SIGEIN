@@ -154,9 +154,55 @@ window.SIGENAlert = (function () {
     });
   }
 
+  var SAFE_FALLBACK_PATH = "/dashboard";
+
+  function isSafeAppPath(pathname) {
+    if (!pathname || typeof pathname !== "string") return false;
+    if (!pathname.startsWith("/") || pathname.startsWith("//")) return false;
+    if (pathname.indexOf("://") !== -1) return false;
+    if (pathname.indexOf("\\") !== -1) return false;
+    return /^\/[\w\-./%]*$/.test(pathname);
+  }
+
+  function safeRedirectPath(remoteUrl) {
+    if (!remoteUrl) return SAFE_FALLBACK_PATH;
+    try {
+      var parsed = new URL(String(remoteUrl), window.location.origin);
+      if (parsed.origin !== window.location.origin) {
+        return SAFE_FALLBACK_PATH;
+      }
+      if (!isSafeAppPath(parsed.pathname)) {
+        return SAFE_FALLBACK_PATH;
+      }
+      return parsed.pathname + parsed.search;
+    } catch (err) {
+      return SAFE_FALLBACK_PATH;
+    }
+  }
+
+  function currentPagePath() {
+    var path = window.location.pathname;
+    if (!isSafeAppPath(path)) {
+      return SAFE_FALLBACK_PATH;
+    }
+    return path + window.location.search;
+  }
+
+  function safeFormActionUrl(form) {
+    var action = form.getAttribute("action");
+    if (action && String(action).trim()) {
+      return safeRedirectPath(action);
+    }
+    return currentPagePath();
+  }
+
+  function navigateAfterSubmit(remoteUrl) {
+    window.location.assign(safeRedirectPath(remoteUrl));
+  }
+
   function submitFormAjax(form) {
     setFormBusy(form, true);
-    var url = form.getAttribute("action") || window.location.href;
+    var url = safeFormActionUrl(form);
     return fetch(url, {
       method: "POST",
       body: new FormData(form),
@@ -174,7 +220,7 @@ window.SIGENAlert = (function () {
               });
             }
             if (res.redirected) {
-              window.location.href = res.url;
+              navigateAfterSubmit(res.url);
               return;
             }
             setFormBusy(form, false);
@@ -182,15 +228,8 @@ window.SIGENAlert = (function () {
           });
         }
         if (res.redirected) {
-          window.location.href = res.url;
+          navigateAfterSubmit(res.url);
           return;
-        }
-        if (res.ok) {
-          return res.text().then(function (html) {
-            document.open();
-            document.write(html);
-            document.close();
-          });
         }
         setFormBusy(form, false);
         return error("Não foi possível concluir a operação. Tente novamente.");
