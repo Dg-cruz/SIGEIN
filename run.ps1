@@ -61,5 +61,13 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+Write-Host "Executando migracoes do Paiol (criar/atualizar tabelas) ..."
+$venvPython = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+& $venvPython migrate_paiol_tables.py
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Falha nas migracoes do Paiol." -ForegroundColor Red
+    exit 1
+}
+
 Write-Host "Iniciando SIGEN em http://127.0.0.1:8000 ..."
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload

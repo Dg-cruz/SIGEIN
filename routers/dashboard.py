@@ -104,3 +104,33 @@ def dashboard_api_data(
     if not user:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     return JSONResponse(build_dashboard_metrics(db))
+
+
+controle_router = APIRouter(tags=["Controle de Estoque"])
+
+
+@controle_router.get("/controle-estoque")
+def controle_estoque_overview(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if not user:
+        return RedirectResponse("/login", status_code=302)
+
+    metrics = build_dashboard_metrics(db)
+
+    user_display = user
+    user_row = db.query(User).filter(User.email == user).first()
+    if user_row:
+        user_display = user_row.nome.split()[0] if user_row.nome else user
+
+    return templates.TemplateResponse(
+        "estoque_dashboard.html",
+        {
+            "request": request,
+            "hide_app_header": True,
+            "user_display": user_display,
+            **metrics,
+        },
+    )

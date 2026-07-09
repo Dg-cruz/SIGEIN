@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Usuários autorizados — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Usuários autorizados", "Operadores habilitados por depósito e classe.", "/paiol/cadastro/usuarios-autorizados/add", "Nova autorização", "fa-user-shield", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Usuário", 0, "Filtrar por usuário...", "filter-usuario") }}
+  {{ mod.filter_text("Depósito", 1, "Filtrar por depósito...", "filter-deposito") }}
+  {{ mod.filter_text("Classe", 2, "Filtrar por classe...", "filter-classe") }}
+  {{ mod.filter_checkbox_options("Status", 4, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Autorizações cadastradas", "paiol-usuarios-count") }}
+  {% if registros %}
+  <table id="paiolUsuariosTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-main">Usuário</th>
+        <th>Depósito</th>
+        <th>Classe</th>
+        <th class="mod-col-desc">Operações</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in registros %}
+      <tr>
+        <td data-search="{{ r.user.nome if r.user else '' }}"><strong>{{ r.user.nome if r.user else '—' }}</strong></td>
+        <td data-search="{{ r.deposito.nome if r.deposito else 'Todos' }}">{{ r.deposito.nome if r.deposito else 'Todos' }}</td>
+        <td data-search="{{ r.classe.nome if r.classe else 'Todas' }}">{{ r.classe.nome if r.classe else 'Todas' }}</td>
+        <td>{{ r.operacoes or '—' }}</td>
+        <td data-search="{{ 'Ativo' if r.ativo else 'Inativo' }}">{{ mod.status_ativo(r.ativo) }}</td>
+        <td>{{ mod.actions("/paiol/cadastro/usuarios-autorizados/edit/" ~ r.id) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhuma autorização cadastrada.", "/paiol/cadastro/usuarios-autorizados/add", "Nova autorização") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolUsuariosTable",
+  "paiol-usuarios-count",
+  [[0, "asc"]],
+  [
+    {"targets": 0, "className": "mod-col-main"},
+    {"targets": 3, "className": "mod-col-desc"},
+    {"targets": 4, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 5, "width": "5.75rem", "className": "mod-col-actions"}
+  ],
+  [
+    {"col": 0, "input": "#filter-usuario"},
+    {"col": 1, "input": "#filter-deposito"},
+    {"col": 2, "input": "#filter-classe"}
+  ],
+  registros|length > 0
+) }}
+{% endblock %}

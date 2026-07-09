@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Consulta de estoque — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Consulta de estoque", "Saldo por material, depósito e localização.", none, "", "fa-magnifying-glass", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Material", 0, "Filtrar por material...", "filter-material") }}
+  {{ mod.filter_text("Depósito", 1, "Filtrar por depósito...", "filter-deposito") }}
+  {{ mod.filter_text("Localização", 2, "Filtrar por localização...", "filter-localizacao") }}
+  {{ mod.filter_checkbox_options("Status", 5, "status", ["OK", "Crítico", "Zerado"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Saldos atuais", "paiol-estoque-count") }}
+  {% if saldos %}
+  <table id="paiolEstoqueTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-main">Material</th>
+        <th>Depósito</th>
+        <th>Localização</th>
+        <th class="mod-col-status">Qtd.</th>
+        <th class="mod-col-status">Mínimo</th>
+        <th class="mod-col-status">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in saldos %}
+      {% set minimo = s.quantidade_minima or (s.material.quantidade_minima if s.material else 0) %}
+      {% set status_label = 'Zerado' if s.quantidade <= 0 else ('Crítico' if s.quantidade <= minimo else 'OK') %}
+      <tr>
+        <td data-search="{{ s.material.nome if s.material else '' }}"><strong>{{ s.material.nome if s.material else '—' }}</strong></td>
+        <td data-search="{{ s.deposito.nome if s.deposito else '' }}">{{ s.deposito.nome if s.deposito else '—' }}</td>
+        <td data-search="{{ s.localizacao.codigo if s.localizacao else '' }}">{{ s.localizacao.codigo if s.localizacao else '—' }}</td>
+        <td>{{ s.quantidade }}</td>
+        <td>{{ minimo }}</td>
+        <td data-search="{{ status_label }}">{{ mod.status_estoque(s.quantidade, minimo) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhum saldo registrado no momento.") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolEstoqueTable",
+  "paiol-estoque-count",
+  [[0, "asc"]],
+  [
+    {"targets": 0, "className": "mod-col-main"},
+    {"targets": 3, "width": "5.5rem", "className": "mod-col-status"},
+    {"targets": 4, "width": "5.5rem", "className": "mod-col-status"},
+    {"targets": 5, "width": "7.5rem", "className": "mod-col-status"}
+  ],
+  [
+    {"col": 0, "input": "#filter-material"},
+    {"col": 1, "input": "#filter-deposito"},
+    {"col": 2, "input": "#filter-localizacao"}
+  ],
+  saldos|length > 0
+) }}
+{% endblock %}

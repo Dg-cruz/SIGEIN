@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Fornecedores — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Fornecedores", "Fornecedores do módulo Paiol.", "/paiol/cadastro/fornecedores/add", "Novo fornecedor", "fa-truck", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Nome", 0, "Filtrar por nome...", "filter-nome") }}
+  {{ mod.filter_text("CNPJ", 1, "Filtrar por CNPJ...", "filter-cnpj") }}
+  {{ mod.filter_text("Contato", 2, "Filtrar por contato...", "filter-contato") }}
+  {{ mod.filter_checkbox_options("Status", 3, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Fornecedores cadastrados", "paiol-fornecedores-count") }}
+  {% if fornecedores %}
+  <table id="paiolFornecedoresTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-main">Nome</th>
+        <th>CNPJ</th>
+        <th>Contato</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in fornecedores %}
+      <tr>
+        <td><strong>{{ f.nome }}</strong></td>
+        <td data-search="{{ f.cnpj or '' }}">{{ f.cnpj or '—' }}</td>
+        <td data-search="{{ f.contato or '' }}">{{ f.contato or '—' }}</td>
+        <td data-search="{{ 'Ativo' if f.ativo else 'Inativo' }}">{{ mod.status_ativo(f.ativo) }}</td>
+        <td>{{ mod.actions("/paiol/cadastro/fornecedores/edit/" ~ f.id) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhum fornecedor cadastrado.", "/paiol/cadastro/fornecedores/add", "Cadastrar fornecedor") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolFornecedoresTable",
+  "paiol-fornecedores-count",
+  [[0, "asc"]],
+  [
+    {"targets": 0, "className": "mod-col-main"},
+    {"targets": 3, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 4, "width": "5.75rem", "className": "mod-col-actions"}
+  ],
+  [
+    {"col": 0, "input": "#filter-nome"},
+    {"col": 1, "input": "#filter-cnpj"},
+    {"col": 2, "input": "#filter-contato"}
+  ],
+  fornecedores|length > 0
+) }}
+{% endblock %}

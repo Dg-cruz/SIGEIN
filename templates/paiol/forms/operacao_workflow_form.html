@@ -1,0 +1,66 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}{{ meta.titulo }} — Paiol{% endblock %}
+{% block form_heading %}{{ meta.titulo }}{% endblock %}
+{% block form_body %}
+{% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+<form method="post" action="{{ meta.action }}">
+  <fieldset>
+    <legend>Material e quantidade</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="material_id">Material *</label>
+        <select id="material_id" name="material_id" required>
+          <option value="">— Selecione —</option>
+          {% for m in materiais %}
+          <option value="{{ m.id }}">{{ m.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="deposito_id">Depósito *</label>
+        <select id="deposito_id" name="deposito_id" required>
+          <option value="">— Selecione —</option>
+          {% for d in depositos %}
+          <option value="{{ d.id }}">{{ d.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="quantidade">Quantidade *</label>
+        <input type="number" id="quantidade" name="quantidade" min="1" required value="1">
+      </div>
+    </div>
+    {% if meta.show_requisicao %}
+    <div class="form-row">
+      <div class="form-group">
+        <label for="requisicao_id">Requisição vinculada (opcional)</label>
+        <input type="number" id="requisicao_id" name="requisicao_id" placeholder="ID da requisição">
+      </div>
+    </div>
+    {% endif %}
+    {% if meta.show_conferente and conferentes %}
+    <div class="form-row">
+      <div class="form-group">
+        <label for="conferente_id">Conferente (dupla custódia) *</label>
+        <select id="conferente_id" name="conferente_id" required>
+          <option value="">— Selecione —</option>
+          {% for c in conferentes %}
+          <option value="{{ c.id }}">{{ c.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    {% endif %}
+    <div class="form-row">
+      <div class="form-group">
+        <label for="observacao">Motivo / observação *</label>
+        <textarea id="observacao" name="observacao" rows="3" required placeholder="Descreva o motivo da operação"></textarea>
+      </div>
+    </div>
+  </fieldset>
+  <div class="buttons">
+    <button type="submit" class="btn-submit">{{ meta.submit }}</button>
+    <a href="{{ meta.action | replace('/add', '') }}" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

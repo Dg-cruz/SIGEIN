@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Classes de material — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Classes de material", "Classificação e grupos de compatibilidade.", "/paiol/cadastro/classes/add", "Nova classe", "fa-layer-group", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Código", 0, "Filtrar por código...", "filter-codigo") }}
+  {{ mod.filter_text("Nome", 1, "Filtrar por nome...", "filter-nome") }}
+  {{ mod.filter_checkbox_options("Status", 3, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Classes cadastradas", "paiol-classes-count") }}
+  {% if classes %}
+  <table id="paiolClassesTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-status">Código</th>
+        <th class="mod-col-main">Nome</th>
+        <th class="mod-col-desc">Grupo compat.</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in classes %}
+      <tr>
+        <td data-search="{{ c.codigo }}"><strong>{{ c.codigo }}</strong></td>
+        <td><strong>{{ c.nome }}</strong></td>
+        <td>{{ c.grupo_compatibilidade or '—' }}</td>
+        <td data-search="{{ 'Ativo' if c.ativo else 'Inativo' }}">{{ mod.status_ativo(c.ativo) }}</td>
+        <td>{{ mod.actions("/paiol/cadastro/classes/edit/" ~ c.id) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhuma classe cadastrada.", "/paiol/cadastro/classes/add", "Cadastrar classe") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolClassesTable",
+  "paiol-classes-count",
+  [[1, "asc"]],
+  [
+    {"targets": 0, "width": "7.5rem", "className": "mod-col-status"},
+    {"targets": 1, "className": "mod-col-main"},
+    {"targets": 2, "className": "mod-col-desc"},
+    {"targets": 3, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 4, "width": "5.75rem", "className": "mod-col-actions"}
+  ],
+  [
+    {"col": 0, "input": "#filter-codigo"},
+    {"col": 1, "input": "#filter-nome"}
+  ],
+  classes|length > 0
+) }}
+{% endblock %}
