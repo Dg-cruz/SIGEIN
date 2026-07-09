@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
+<div class="container">
+  <h2>{% block form_heading %}{% endblock %}</h2>
+  {% block form_body %}{% endblock %}
+</div>
+{% endblock %}

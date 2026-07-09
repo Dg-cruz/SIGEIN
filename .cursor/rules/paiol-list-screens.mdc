@@ -1,0 +1,58 @@
+---
+description: Padrão visual para telas de listagem do módulo Paiol e Controle de Estoque
+globs: templates/paiol/**/*.html,templates/**/*_list.html,templates/macros/mod_list.html
+alwaysApply: false
+---
+
+# Telas de listagem (Paiol / Controle de Estoque)
+
+Use o padrão consolidado em `templates/paiol/cadastro_classes.html` e `templates/macros/mod_list.html`.
+
+## Estrutura obrigatória
+
+```jinja
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block content %}
+{{ mod.assets() }}
+<div class="mod-page">
+  {{ mod.header(título, subtítulo, add_url, add_label, ícone, true, back_url) }}
+  {{ mod.filters_start() }}
+  {# filtros #}
+  {{ mod.filters_end() }}
+  {{ mod.panel_start("Título do painel", "id-contador") }}
+  {# tabela ou empty_state #}
+  {{ mod.panel_end() }}
+</div>
+{{ mod.init_datatable(...) }}
+{% endblock %}
+```
+
+## Tabela
+
+- `class="display mod-table--layout-cols"`
+- Colunas com `mod-col-main`, `mod-col-desc`, `mod-col-status`, `mod-col-actions`
+- `data-search` nas células usadas por filtros checkbox
+- Status: `{{ mod.status_ativo(item.ativo) }}` ou `{{ mod.status_estoque(qtd, minimo) }}`
+- Ações com edição: `{{ mod.actions(url_edit) }}`
+- Vazio: `{{ mod.empty_state("mensagem", url_add, "label") }}` — nunca `<p>` solto
+
+## Filtros e DataTables
+
+- `show_clear=true` no header
+- Filtros texto: `mod.filter_text` + `init_datatable` com `text_filters`
+- Filtros checkbox: `mod.filter_checkbox_options` + `initColumnFilters` (já incluso em `init_datatable`)
+- Sempre `countSelector` no painel
+
+## Formulários do mesmo módulo
+
+- Cadastro: `templates/paiol/forms/base_form.html` + `static/css/module-form.css`
+- Estoque operacional: `templates/paiol/forms/estoque_movimento_form.html` + `routers/paiol_estoque.py` + `services/paiol_estoque_service.py`
+- Botões: `btn-submit` / `btn-cancel` (padrão produtos)
+
+## Não fazer
+
+- Tabelas sem DataTables em telas de listagem
+- Botões de ação inline com estilos ad hoc
+- Referências a nomes de tabela SQL no empty state (`paiol_*`)

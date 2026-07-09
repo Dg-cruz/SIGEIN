@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Localizações — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Localizações", "Posições físicas dentro dos depósitos.", "/paiol/cadastro/localizacoes/add", "Nova localização", "fa-map-pin", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Depósito", 0, "Filtrar por depósito...", "filter-deposito") }}
+  {{ mod.filter_text("Código", 1, "Filtrar por código...", "filter-codigo") }}
+  {{ mod.filter_text("Descrição", 2, "Filtrar por descrição...", "filter-descricao") }}
+  {{ mod.filter_checkbox_options("Status", 3, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Localizações cadastradas", "paiol-localizacoes-count") }}
+  {% if localizacoes %}
+  <table id="paiolLocalizacoesTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th>Depósito</th>
+        <th class="mod-col-status">Código</th>
+        <th class="mod-col-desc">Descrição</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in localizacoes %}
+      <tr>
+        <td data-search="{{ l.deposito.nome if l.deposito else '' }}"><strong>{{ l.deposito.nome if l.deposito else '—' }}</strong></td>
+        <td data-search="{{ l.codigo }}"><strong>{{ l.codigo }}</strong></td>
+        <td>{{ l.descricao or '—' }}</td>
+        <td data-search="{{ 'Ativo' if l.ativo else 'Inativo' }}">{{ mod.status_ativo(l.ativo) }}</td>
+        <td>{{ mod.actions("/paiol/cadastro/localizacoes/edit/" ~ l.id) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhuma localização cadastrada.", "/paiol/cadastro/localizacoes/add", "Cadastrar localização") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolLocalizacoesTable",
+  "paiol-localizacoes-count",
+  [[0, "asc"], [1, "asc"]],
+  [
+    {"targets": 1, "width": "7.5rem", "className": "mod-col-status"},
+    {"targets": 2, "className": "mod-col-desc"},
+    {"targets": 3, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 4, "width": "5.75rem", "className": "mod-col-actions"}
+  ],
+  [
+    {"col": 0, "input": "#filter-deposito"},
+    {"col": 1, "input": "#filter-codigo"},
+    {"col": 2, "input": "#filter-descricao"}
+  ],
+  localizacoes|length > 0
+) }}
+{% endblock %}

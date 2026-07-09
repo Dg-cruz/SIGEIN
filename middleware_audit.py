@@ -52,7 +52,12 @@ class AuditMiddleware(BaseHTTPMiddleware):
             user = request.session.get("user") if hasattr(request, "session") else None
             if user:
                 status = response.status_code
-                acao = f"[{method}] {path}"
+                if path.startswith("/paiol"):
+                    acao = f"Paiol: [{method}] {path}"
+                    tipo_log = "operacional"
+                else:
+                    acao = f"[{method}] {path}"
+                    tipo_log = "sistema"
                 if status >= 400:
                     acao += f" (HTTP {status})"
                 db = SessionLocal()
@@ -62,7 +67,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
                         usuario=user,
                         acao=acao,
                         request=request,
-                        tipo="sistema",
+                        tipo=tipo_log,
                     )
                 except Exception:
                     db.rollback()

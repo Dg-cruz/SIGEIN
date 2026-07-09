@@ -7,7 +7,7 @@
 {{ mod.assets() }}
 
 <div class="mod-page">
-  {{ mod.header("Movimentações", "Histórico de transferências e alterações de itens.", "/movements/nova", "Nova movimentação", "fa-arrows-turn-right") }}
+  {{ mod.header("Movimentações", "Histórico de transferências e alterações de itens.", "/movements/nova", "Nova movimentação", "fa-arrows-turn-right", true, "/controle-estoque") }}
 
   {{ mod.filters_start() }}
   {{ mod.filter_checkbox_options("Tipo", 1, "tipo", tipos) }}

@@ -1,0 +1,49 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}{{ 'Editar' if action == 'edit' else 'Nova' }} autorização — Paiol{% endblock %}
+{% block form_heading %}{{ 'Editar' if action == 'edit' else 'Nova' }} autorização de usuário{% endblock %}
+{% block form_body %}
+<form method="post" action="{% if action == 'edit' %}/paiol/cadastro/usuarios-autorizados/edit/{{ item.id }}{% else %}/paiol/cadastro/usuarios-autorizados/add{% endif %}">
+  <fieldset>
+    <legend>Permissões de acesso</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="user_id">Usuário *</label>
+        <select id="user_id" name="user_id" required>
+          {% for u in usuarios %}<option value="{{ u.id }}" {% if action == 'edit' and item.user_id == u.id %}selected{% endif %}>{{ u.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="deposito_id">Depósito (opcional)</label>
+        <select id="deposito_id" name="deposito_id">
+          <option value="">Todos</option>
+          {% for d in depositos %}<option value="{{ d.id }}" {% if action == 'edit' and item.deposito_id == d.id %}selected{% endif %}>{{ d.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="classe_id">Classe (opcional)</label>
+        <select id="classe_id" name="classe_id">
+          <option value="">Todas</option>
+          {% for c in classes %}<option value="{{ c.id }}" {% if action == 'edit' and item.classe_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="operacoes">Operações permitidas</label>
+        <input type="text" id="operacoes" name="operacoes" value="{{ item.operacoes if action == 'edit' else '' }}" placeholder="entrada,saida,auditoria">
+      </div>
+    </div>
+    {% if action == 'edit' %}
+    <div class="form-row">
+      <div class="form-group form-group--check">
+        <label><input type="checkbox" name="ativo" {% if item.ativo %}checked{% endif %}> Ativo</label>
+      </div>
+    </div>
+    {% endif %}
+  </fieldset>
+  <div class="buttons">
+    <button type="submit" class="btn-submit">Salvar</button>
+    <a href="/paiol/cadastro/usuarios-autorizados" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

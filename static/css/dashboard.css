@@ -430,9 +430,323 @@
 }
 
 .dash-action--stock .dash-action__icon { background: rgba(100, 116, 139, 0.15); }
+.dash-action--products .dash-action__icon { background: rgba(13, 110, 253, 0.15); }
 .dash-action--mov .dash-action__icon { background: rgba(6, 182, 212, 0.15); }
 .dash-action--audit .dash-action__icon { background: rgba(139, 92, 246, 0.15); }
 .dash-action--alert .dash-action__icon { background: rgba(245, 158, 11, 0.15); }
+
+/* Ações rápidas em linha (Controle de Estoque) */
+.dash-actions--top {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.dash-actions--top .dash-action {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+}
+
+.dash-actions--top .dash-action:hover {
+  transform: translateY(-3px);
+}
+
+.dash-panel--full {
+  margin-bottom: 1.75rem;
+}
+
+/* Acesso Rápido — estilo E-Protocolo (Paiol) */
+.quick-access {
+  margin-bottom: 1.75rem;
+}
+
+.quick-access h3 {
+  color: #004080;
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quick-customize-btn {
+  background: #0d6efd;
+  border: none;
+  color: #fff;
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.quick-customize-btn i {
+  margin: 0;
+}
+
+.quick-customize-btn:hover {
+  background: #0b5ed7;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.cards-grid:empty {
+  display: none;
+}
+
+.access-card {
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.access-card.quick {
+  border-color: #0d6efd;
+}
+
+.access-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  border-color: #0d6efd;
+}
+
+.access-card--row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.access-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(13, 110, 253, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0d6efd;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+
+.access-card__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.access-card__text strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.access-card__text small {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+  line-height: 1.35;
+}
+
+.quick-card-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.quick-card-wrap .access-card {
+  height: 100%;
+}
+
+.quick-card__remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.92);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 1;
+}
+
+.quick-card-wrap:hover .quick-card__remove {
+  opacity: 1;
+}
+
+.quick-access__empty {
+  margin: 0.75rem 0 0;
+  font-size: 0.88rem;
+  color: var(--dash-muted);
+}
+
+/* Modal de personalização — estilo E-Protocolo */
+.quick-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.quick-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.quick-modal-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  padding: 24px;
+  border-radius: 10px;
+  width: 420px;
+  max-width: 95%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.quick-modal-dialog h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.quick-modal-subtitle {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.quick-list {
+  max-height: 380px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.quick-list-group {
+  margin-bottom: 16px;
+}
+
+.quick-list-group:last-child {
+  margin-bottom: 0;
+}
+
+.quick-list-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.quick-list-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.35rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #f8f9fa;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.quick-list-pick:hover {
+  background: #eff6ff;
+  border-color: #0d6efd;
+}
+
+.quick-list-pick i {
+  width: 20px;
+  color: #0d6efd;
+  text-align: center;
+}
+
+.quick-list-pick strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #1e293b;
+}
+
+.quick-list-pick small {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.quick-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.quick-btn-cancel,
+.quick-btn-save {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.quick-btn-cancel {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.quick-btn-cancel:hover {
+  background: #dde2e6;
+}
+
+.quick-btn-save {
+  background: #0d6efd;
+  color: #fff;
+}
+
+.quick-btn-save:hover {
+  background: #0b5ed7;
+}
+
+@media (max-width: 768px) {
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Integração com layout base */
 .main-content:has(.dashboard-page) {

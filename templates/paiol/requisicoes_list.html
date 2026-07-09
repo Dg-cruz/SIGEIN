@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Requisições — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Requisições", "Solicitações de material bélico por unidade.", "/paiol/movimentacoes/requisicoes/add", "Nova requisição", "fa-file-circle-plus", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Número", 0, "Filtrar por número...", "filter-numero") }}
+  {{ mod.filter_text("Solicitante", 2, "Filtrar por solicitante...", "filter-solicitante") }}
+  {{ mod.filter_checkbox_options("Status", 3, "status", status_labels.values()|list, "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Requisições registradas", "paiol-requisicoes-count") }}
+  {% if requisicoes %}
+  <table id="paiolRequisicoesTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-status">Número</th>
+        <th class="mod-col-main">Unidade</th>
+        <th>Solicitante</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-status">Data</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in requisicoes %}
+      <tr>
+        <td data-search="{{ r.numero }}"><strong>{{ r.numero }}</strong></td>
+        <td><strong>{{ r.unidade.nome if r.unidade else '—' }}</strong></td>
+        <td data-search="{{ r.solicitante.nome if r.solicitante else '' }}">{{ r.solicitante.nome if r.solicitante else '—' }}</td>
+        <td data-search="{{ status_labels.get(r.status, r.status) }}"><span class="mod-badge mod-status--info">{{ status_labels.get(r.status, r.status) }}</span></td>
+        <td data-order="{{ r.created_at.isoformat() if r.created_at else '' }}">{{ r.created_at.strftime('%d/%m/%Y') if r.created_at else '—' }}</td>
+        <td>
+          <a href="/paiol/movimentacoes/requisicoes/{{ r.id }}" class="mod-action-btn" title="Ver"><i class="fa-solid fa-eye"></i></a>
+          {% if r.status in ['rascunho', 'pendente'] %}
+          <a href="/paiol/movimentacoes/requisicoes/edit/{{ r.id }}" class="mod-action-btn" title="Editar"><i class="fa-solid fa-pen"></i></a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhuma requisição registrada.", "/paiol/movimentacoes/requisicoes/add", "Nova requisição") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolRequisicoesTable",
+  "paiol-requisicoes-count",
+  [[4, "desc"]],
+  [
+    {"targets": 0, "width": "9rem", "className": "mod-col-status"},
+    {"targets": 1, "className": "mod-col-main"},
+    {"targets": 3, "width": "10rem", "className": "mod-col-status"},
+    {"targets": 4, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 5, "width": "5.75rem", "className": "mod-col-actions"}
+  ],
+  [
+    {"col": 0, "input": "#filter-numero"},
+    {"col": 2, "input": "#filter-solicitante"}
+  ],
+  requisicoes|length > 0
+) }}
+{% endblock %}

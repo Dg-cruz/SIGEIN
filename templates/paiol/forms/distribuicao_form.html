@@ -1,0 +1,58 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}Nova distribuição — Paiol{% endblock %}
+{% block form_heading %}Distribuição de material{% endblock %}
+{% block form_body %}
+{% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+<form method="post" action="/paiol/movimentacoes/distribuicoes/add">
+  <fieldset>
+    <legend>Requisição e depósito</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="requisicao_id">Requisição *</label>
+        <select id="requisicao_id" name="requisicao_id" required onchange="location.href='?req_id='+this.value">
+          <option value="">— Selecione —</option>
+          {% for r in requisicoes %}
+          <option value="{{ r.id }}" {% if req_sel and req_sel.id == r.id %}selected{% endif %}>{{ r.numero }} — {{ r.unidade.nome if r.unidade else 'sem unidade' }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="deposito_id">Depósito de saída *</label>
+        <select id="deposito_id" name="deposito_id" required>
+          <option value="">— Selecione —</option>
+          {% for d in depositos %}
+          <option value="{{ d.id }}" {% if req_sel and req_sel.deposito_id == d.id %}selected{% endif %}>{{ d.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="observacao">Observação</label>
+        <textarea id="observacao" name="observacao" rows="2"></textarea>
+      </div>
+    </div>
+  </fieldset>
+  {% if req_sel %}
+  <fieldset>
+    <legend>Quantidades a distribuir</legend>
+    {% for it in req_sel.itens %}
+    {% set pendente = it.quantidade_solicitada - it.quantidade_atendida %}
+    {% if pendente > 0 %}
+    <div class="form-row">
+      <div class="form-group">
+        <label>{{ it.material.nome if it.material else 'Material' }} (pendente: {{ pendente }})</label>
+        <input type="hidden" name="item_id" value="{{ it.id }}">
+        <input type="number" name="quantidade" min="0" max="{{ pendente }}" value="0">
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </fieldset>
+  {% endif %}
+  <div class="buttons">
+    <button type="submit" class="btn-submit" {% if not req_sel %}disabled{% endif %}>Registrar distribuição</button>
+    <a href="/paiol/movimentacoes/distribuicoes" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

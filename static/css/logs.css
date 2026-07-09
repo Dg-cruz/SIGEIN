@@ -1,4 +1,29 @@
 /* Auditoria /logs — alinhado ao padrão mod-list */
+.logs-page .mod-header__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.logs-page__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+}
+
+.logs-page__hint a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.logs-page__hint a:hover {
+  text-decoration: underline;
+}
+
+.logs-page .mod-back {
+  align-self: flex-start;
+  margin-bottom: 0.25rem;
+}
+
 .logs-page .mod-header__actions {
   flex-wrap: wrap;
   gap: 0.5rem;

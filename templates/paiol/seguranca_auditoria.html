@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Auditoria — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Auditoria e alertas", "Itens críticos e zerados no paiol.", "/paiol/estoque/consulta", "Ver estoque", "fa-magnifying-glass", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Material", 0, "Filtrar por material...", "filter-material") }}
+  {{ mod.filter_text("Depósito", 2, "Filtrar por depósito...", "filter-deposito") }}
+  {{ mod.filter_checkbox_options("Status", 5, "status", ["Zerado", "Crítico"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Alertas ativos", "paiol-auditoria-count") }}
+  {% if alerts %}
+  <table id="paiolAuditoriaTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-main">Material</th>
+        <th>Tipo</th>
+        <th>Depósito</th>
+        <th class="mod-col-status">Qtd.</th>
+        <th class="mod-col-status">Mínimo</th>
+        <th class="mod-col-status">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in alerts %}
+      <tr>
+        <td data-search="{{ a.produto }}"><strong>{{ a.produto }}</strong></td>
+        <td data-search="{{ a.tipo }}">{{ a.tipo }}</td>
+        <td data-search="{{ a.unidade }}">{{ a.unidade }}</td>
+        <td>{{ a.quantidade }}</td>
+        <td>{{ a.minimo }}</td>
+        <td data-search="{{ a.status }}">
+          {% if a.status == 'ZERADO' %}
+          <span class="mod-badge mod-status--zero">Zerado</span>
+          {% else %}
+          <span class="mod-badge mod-status--crit">Crítico</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhum alerta ativo no momento.") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolAuditoriaTable",
+  "paiol-auditoria-count",
+  [[5, "asc"], [0, "asc"]],
+  [
+    {"targets": 0, "className": "mod-col-main"},
+    {"targets": 3, "width": "5.5rem", "className": "mod-col-status"},
+    {"targets": 4, "width": "5.5rem", "className": "mod-col-status"},
+    {"targets": 5, "width": "7.5rem", "className": "mod-col-status"}
+  ],
+  [
+    {"col": 0, "input": "#filter-material"},
+    {"col": 2, "input": "#filter-deposito"}
+  ],
+  alerts|length > 0
+) }}
+{% endblock %}

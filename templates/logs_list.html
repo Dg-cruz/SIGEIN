@@ -11,19 +11,27 @@
 <div class="mod-page logs-page">
   <header class="mod-header">
     <div class="mod-header__title">
-      <h1>Auditoria do sistema</h1>
-      <p>Histórico de acessos e operações realizadas no SIGEIN.</p>
+      {% if back_url %}
+      <a href="{{ back_url }}" class="mod-back" title="Voltar"><i class="fas fa-arrow-left"></i></a>
+      {% endif %}
+      <h1>{{ logs_title|default("Auditoria do sistema") }}</h1>
+      <p>{{ logs_subtitle|default("Histórico de acessos e operações realizadas no SIGEIN.") }}</p>
+      {% if paiol_logs %}
+      <p class="logs-page__hint"><a href="/logs/">Ver auditoria completa do sistema</a></p>
+      {% endif %}
     </div>
     <div class="mod-header__actions">
       <button type="button" id="clear-filters" class="mod-btn mod-btn--ghost">
         <i class="fas fa-filter-circle-xmark"></i> Limpar filtros
       </button>
+      {% if show_exports|default(true) %}
       <a href="/logs/export/pdf" class="mod-btn mod-btn--export-pdf" title="Exportar PDF">
         <i class="fas fa-file-pdf"></i> PDF
       </a>
       <a href="/logs/export/xlsx" class="mod-btn mod-btn--export-xlsx" title="Exportar Excel">
         <i class="fas fa-file-excel"></i> Excel
       </a>
+      {% endif %}
     </div>
   </header>
 
@@ -64,7 +72,7 @@
   {{ mod.filter_text("Ação", 4, "Filtrar por ação...", "filter-acao") }}
   {{ mod.filters_end() }}
 
-  {{ mod.panel_start("Registros de auditoria", "logs-count") }}
+  {{ mod.panel_start(panel_title|default("Registros de auditoria"), "logs-count") }}
   {% if logs %}
   <table id="logsTable" class="display mod-table--layout-cols" style="width:100%;">
     <thead>

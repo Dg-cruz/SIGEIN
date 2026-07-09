@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Cadeia de custódia — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Cadeia de custódia", "Trilha de responsabilidade do material.", none, "", "fa-link", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Evento", 1, "Filtrar por evento...", "filter-evento") }}
+  {{ mod.filter_text("Material", 2, "Filtrar por material...", "filter-material") }}
+  {{ mod.filter_text("Responsável", 4, "Filtrar por usuário...", "filter-usuario") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Eventos de custódia", "paiol-custodia-count") }}
+  {% if eventos %}
+  <table id="paiolCustodiaTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-status">Data</th>
+        <th>Evento</th>
+        <th class="mod-col-main">Material</th>
+        <th>Documento</th>
+        <th>Responsável</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in eventos %}
+      <tr>
+        <td data-order="{{ e.created_at.isoformat() if e.created_at else '' }}">{{ e.created_at.strftime('%d/%m/%Y %H:%M') if e.created_at else '—' }}</td>
+        <td data-search="{{ e.evento }}"><span class="mod-badge mod-status--info">{{ e.evento }}</span></td>
+        <td data-search="{{ e.material.nome if e.material else '' }}"><strong>{{ e.material.nome if e.material else '—' }}</strong></td>
+        <td>{{ e.documento_ref or '—' }}</td>
+        <td data-search="{{ e.user.nome if e.user else '' }}">{{ e.user.nome if e.user else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhum evento de custódia registrado.") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolCustodiaTable",
+  "paiol-custodia-count",
+  [[0, "desc"]],
+  [
+    {"targets": 0, "width": "9rem", "className": "mod-col-status"},
+    {"targets": 2, "className": "mod-col-main"}
+  ],
+  [
+    {"col": 1, "input": "#filter-evento"},
+    {"col": 2, "input": "#filter-material"},
+    {"col": 4, "input": "#filter-usuario"}
+  ],
+  eventos|length > 0
+) }}
+{% endblock %}

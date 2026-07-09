@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from templating import templates
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware  # ✅ Import no topo
 from middleware import AuthRequiredMiddleware
 from middleware_audit import AuditMiddleware
@@ -42,6 +43,16 @@ app.add_middleware(AuditMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ========================================
+# 3.1 FAVICON (compatível com /favicon.ico)
+# ========================================
+FAVICON_PATH = os.path.join(os.path.dirname(__file__), "static", "favicon.ico")
+
+
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"], include_in_schema=False)
+async def favicon():
+    return FileResponse(FAVICON_PATH, media_type="image/x-icon")
+
+# ========================================
 # 4. TEMPLATES (instância única em templating.py)
 # ========================================
 app.state.templates = templates
@@ -71,12 +82,14 @@ if not IS_VERCEL or os.getenv("RUN_DB_MIGRATIONS") == "1":
 from routers import (
     auth, dashboard, users, units, orgaos, movements, logs, root,
     equipment_types, brands, states, products, stock,
-    categories, eprotocolo, api_geografica, geografia, segem
+    categories, eprotocolo, api_geografica, geografia, segem, paiol, paiol_cadastro, paiol_estoque,
+    paiol_workflow, paiol_seguranca, paiol_relatorios
 )
 
 app.include_router(root.router)
 app.include_router(auth.router)
 app.include_router(dashboard.router)
+app.include_router(dashboard.controle_router)
 app.include_router(users.router)
 app.include_router(units.router)
 app.include_router(orgaos.router)
@@ -92,3 +105,10 @@ app.include_router(api_geografica.router)
 app.include_router(geografia.router)
 app.include_router(logs.router)
 app.include_router(segem.router)
+app.include_router(paiol.router)
+app.include_router(paiol.legacy_router)
+app.include_router(paiol_cadastro.router)
+app.include_router(paiol_estoque.router)
+app.include_router(paiol_workflow.router)
+app.include_router(paiol_seguranca.router)
+app.include_router(paiol_relatorios.router)

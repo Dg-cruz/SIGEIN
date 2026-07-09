@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% set tipo_labels = {
+  'arma': 'Arma / material bélico',
+  'municao': 'Munição',
+  'explosivo': 'Explosivo',
+  'acessorio': 'Acessório'
+} %}
+
+{% block title %}{{ titulo }} — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header(titulo, "Cadastro de materiais do módulo Paiol.", "/paiol/cadastro/materiais/add" ~ ("?tipo=" ~ tipo_filtro if tipo_filtro else ""), "Novo material", "fa-plus", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Código", 0, "Filtrar por código...", "filter-codigo") }}
+  {{ mod.filter_text("Nome", 1, "Filtrar por nome...", "filter-nome") }}
+  {% if not tipo_filtro %}
+  {{ mod.filter_checkbox_options("Tipo", 2, "tipo", tipo_labels.values()|list, "Selecionar tipo...") }}
+  {% endif %}
+  {{ mod.filter_text("Classe", 3 if not tipo_filtro else 2, "Filtrar por classe...", "filter-classe") }}
+  {{ mod.filter_text("Fabricante", 5 if not tipo_filtro else 4, "Filtrar por fabricante...", "filter-fabricante") }}
+  {{ mod.filter_checkbox_options("Status", 6 if not tipo_filtro else 5, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Materiais cadastrados", "paiol-materiais-count") }}
+  {% if materiais %}
+  <table id="paiolMateriaisTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-status">Código</th>
+        <th class="mod-col-main">Nome</th>
+        {% if not tipo_filtro %}<th>Tipo</th>{% endif %}
+        <th>Classe</th>
+        <th>Calibre</th>
+        <th>Fabricante</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in materiais %}
+      <tr>
+        <td data-search="{{ m.codigo }}"><strong>{{ m.codigo }}</strong></td>
+        <td><strong>{{ m.nome }}</strong></td>
+        {% if not tipo_filtro %}
+        <td data-search="{{ tipo_labels.get(m.tipo, m.tipo) }}">{{ tipo_labels.get(m.tipo, m.tipo) }}</td>
+        {% endif %}
+        <td data-search="{{ m.classe.nome if m.classe else '' }}">{{ m.classe.nome if m.classe else '—' }}</td>
+        <td data-search="{{ m.calibre or '' }}">{{ m.calibre or '—' }}</td>
+        <td data-search="{{ m.fabricante.nome if m.fabricante else '' }}">{{ m.fabricante.nome if m.fabricante else '—' }}</td>
+        <td data-search="{{ 'Ativo' if m.ativo else 'Inativo' }}">{{ mod.status_ativo(m.ativo) }}</td>
+        <td>{{ mod.actions("/paiol/cadastro/materiais/edit/" ~ m.id) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhum material cadastrado.", "/paiol/cadastro/materiais/add" ~ ("?tipo=" ~ tipo_filtro if tipo_filtro else ""), "Cadastrar material") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{% if not tipo_filtro %}
+{% set col_defs = [
+  {"targets": 0, "width": "7.5rem", "className": "mod-col-status"},
+  {"targets": 1, "className": "mod-col-main"},
+  {"targets": 6, "width": "7.5rem", "className": "mod-col-status"},
+  {"orderable": false, "targets": 7, "width": "5.75rem", "className": "mod-col-actions"}
+] %}
+{% set text_filters = [
+  {"col": 0, "input": "#filter-codigo"},
+  {"col": 1, "input": "#filter-nome"},
+  {"col": 3, "input": "#filter-classe"},
+  {"col": 5, "input": "#filter-fabricante"}
+] %}
+{% else %}
+{% set col_defs = [
+  {"targets": 0, "width": "7.5rem", "className": "mod-col-status"},
+  {"targets": 1, "className": "mod-col-main"},
+  {"targets": 5, "width": "7.5rem", "className": "mod-col-status"},
+  {"orderable": false, "targets": 6, "width": "5.75rem", "className": "mod-col-actions"}
+] %}
+{% set text_filters = [
+  {"col": 0, "input": "#filter-codigo"},
+  {"col": 1, "input": "#filter-nome"},
+  {"col": 2, "input": "#filter-classe"},
+  {"col": 4, "input": "#filter-fabricante"}
+] %}
+{% endif %}
+
+{{ mod.init_datatable(
+  "paiolMateriaisTable",
+  "paiol-materiais-count",
+  [[1, "asc"]],
+  col_defs,
+  text_filters,
+  materiais|length > 0
+) }}
+{% endblock %}

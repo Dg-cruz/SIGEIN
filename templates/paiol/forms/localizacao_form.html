@@ -1,0 +1,47 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}{{ 'Editar' if action == 'edit' else 'Nova' }} localização — Paiol{% endblock %}
+{% block form_heading %}{{ 'Editar' if action == 'edit' else 'Nova' }} localização{% endblock %}
+{% block form_body %}
+{% if not depositos %}
+<div class="module-form-empty">
+  <p>Nenhum depósito cadastrado. Cadastre um depósito antes de criar localizações.</p>
+  <div class="buttons">
+    <a href="/paiol/cadastro/depositos/add" class="btn-submit" style="text-decoration:none">Cadastrar depósito</a>
+    <a href="/paiol/cadastro/localizacoes" class="btn-cancel">Voltar</a>
+  </div>
+</div>
+{% else %}
+<form method="post" action="{% if action == 'edit' %}/paiol/cadastro/localizacoes/edit/{{ item.id }}{% else %}/paiol/cadastro/localizacoes/add{% endif %}">
+  <fieldset>
+    <legend>Posição no depósito</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="deposito_id">Depósito *</label>
+        <select id="deposito_id" name="deposito_id" required>
+          {% for d in depositos %}<option value="{{ d.id }}" {% if action == 'edit' and item.deposito_id == d.id %}selected{% endif %}>{{ d.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="codigo">Código *</label>
+        <input type="text" id="codigo" name="codigo" required value="{{ item.codigo if action == 'edit' else '' }}" placeholder="Ex: A-01">
+      </div>
+      <div class="form-group">
+        <label for="descricao">Descrição</label>
+        <input type="text" id="descricao" name="descricao" value="{{ item.descricao if action == 'edit' else '' }}">
+      </div>
+    </div>
+    {% if action == 'edit' %}
+    <div class="form-row">
+      <div class="form-group form-group--check">
+        <label><input type="checkbox" name="ativo" {% if item.ativo %}checked{% endif %}> Ativo</label>
+      </div>
+    </div>
+    {% endif %}
+  </fieldset>
+  <div class="buttons">
+    <button type="submit" class="btn-submit">Salvar</button>
+    <a href="/paiol/cadastro/localizacoes" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+{% endif %}
+{% endblock %}
