@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Movimentações — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Movimentações", "Histórico operacional do paiol.", none, "", "fa-right-left", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Material", 2, "Filtrar por material...", "filter-material") }}
+  {{ mod.filter_checkbox_options("Tipo", 1, "tipo", tipos_mov.values()|list, "Selecionar tipo...") }}
+  {{ mod.filter_text("Origem", 3, "Filtrar por origem...", "filter-origem") }}
+  {{ mod.filter_text("Destino", 4, "Filtrar por destino...", "filter-destino") }}
+  {{ mod.filter_text("Usuário", 6, "Filtrar por usuário...", "filter-usuario") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Movimentações registradas", "paiol-movimentacoes-count") }}
+  {% if movimentacoes %}
+  <table id="paiolMovimentacoesTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-status">Data</th>
+        <th>Tipo</th>
+        <th class="mod-col-main">Material</th>
+        <th>Origem</th>
+        <th>Destino</th>
+        <th class="mod-col-status">Qtd.</th>
+        <th>Usuário</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in movimentacoes %}
+      <tr>
+        <td data-order="{{ m.data.isoformat() if m.data else '' }}">{{ m.data.strftime('%d/%m/%Y %H:%M') if m.data else '—' }}</td>
+        <td data-search="{{ tipos_mov.get(m.tipo, m.tipo) }}"><span class="mod-badge mod-status--info">{{ tipos_mov.get(m.tipo, m.tipo) }}</span></td>
+        <td data-search="{{ m.material.nome if m.material else '' }}"><strong>{{ m.material.nome if m.material else '—' }}</strong></td>
+        <td data-search="{{ m.deposito_origem.nome if m.deposito_origem else '' }}">{{ m.deposito_origem.nome if m.deposito_origem else '—' }}</td>
+        <td data-search="{{ m.deposito_destino.nome if m.deposito_destino else '' }}">{{ m.deposito_destino.nome if m.deposito_destino else '—' }}</td>
+        <td>{{ m.quantidade }}</td>
+        <td data-search="{{ m.user.nome if m.user else '' }}">{{ m.user.nome if m.user else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhuma movimentação registrada.") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolMovimentacoesTable",
+  "paiol-movimentacoes-count",
+  [[0, "desc"]],
+  [
+    {"targets": 0, "width": "9rem", "className": "mod-col-status"},
+    {"targets": 2, "className": "mod-col-main"},
+    {"targets": 5, "width": "5.5rem", "className": "mod-col-status"}
+  ],
+  [
+    {"col": 2, "input": "#filter-material"},
+    {"col": 3, "input": "#filter-origem"},
+    {"col": 4, "input": "#filter-destino"},
+    {"col": 6, "input": "#filter-usuario"}
+  ],
+  movimentacoes|length > 0
+) }}
+{% endblock %}

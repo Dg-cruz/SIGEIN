@@ -71,12 +71,14 @@ if not IS_VERCEL or os.getenv("RUN_DB_MIGRATIONS") == "1":
 from routers import (
     auth, dashboard, users, units, orgaos, movements, logs, root,
     equipment_types, brands, states, products, stock,
-    categories, eprotocolo, api_geografica, geografia, segem
+    categories, eprotocolo, api_geografica, geografia, segem, paiol, paiol_cadastro, paiol_estoque,
+    paiol_workflow, paiol_seguranca, paiol_relatorios
 )
 
 app.include_router(root.router)
 app.include_router(auth.router)
 app.include_router(dashboard.router)
+app.include_router(dashboard.controle_router)
 app.include_router(users.router)
 app.include_router(units.router)
 app.include_router(orgaos.router)
@@ -92,3 +94,10 @@ app.include_router(api_geografica.router)
 app.include_router(geografia.router)
 app.include_router(logs.router)
 app.include_router(segem.router)
+app.include_router(paiol.router)
+app.include_router(paiol.legacy_router)
+app.include_router(paiol_cadastro.router)
+app.include_router(paiol_estoque.router)
+app.include_router(paiol_workflow.router)
+app.include_router(paiol_seguranca.router)
+app.include_router(paiol_relatorios.router)

@@ -1,0 +1,201 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}{{ meta.titulo }} — Paiol{% endblock %}
+{% block form_heading %}{{ meta.titulo }}{% endblock %}
+{% block form_body %}
+{% if error %}
+<div class="mod-alert mod-alert--error" style="margin-bottom:1rem;padding:12px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#b91c1c;">
+  <strong>Não foi possível registrar:</strong> {{ error }}
+</div>
+{% endif %}
+<p style="margin:0 0 1.25rem;color:#64748b;">{{ meta.descricao }}</p>
+<form method="post" action="/paiol/estoque/{% if operacao == 'ajuste' %}ajustes{% else %}{{ operacao }}{% endif %}" id="paiol-estoque-form"
+  data-saldo-dep="{% if operacao == 'entrada' %}deposito_destino_id{% elif operacao in ['ajuste', 'inventario'] %}deposito_origem_id{% else %}deposito_origem_id{% endif %}"
+  data-saldo-loc="{% if operacao == 'entrada' %}localizacao_destino_id{% elif operacao == 'transferencia' %}localizacao_origem_id{% else %}localizacao_id{% endif %}">
+  <fieldset>
+    <legend>Material</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="material_id">Material *</label>
+        <select id="material_id" name="material_id" required>
+          <option value="">-- Selecione --</option>
+          {% for m in materiais %}
+          <option value="{{ m.id }}">{{ m.codigo }} — {{ m.nome }}</option>
+          {% endfor %}
+        </select>
+        {% if not materiais %}
+        <small style="color:#b45309;margin-top:6px;">Nenhum material por quantidade cadastrado. Desmarque "controla por série" ou cadastre um material.</small>
+        {% endif %}
+      </div>
+      <div class="form-group" id="saldo-atual-wrap" style="display:none;">
+        <label>Saldo atual</label>
+        <p id="saldo-atual-text" style="margin:0;padding:10px 12px;background:#f1f5f9;border-radius:6px;font-weight:600;">—</p>
+      </div>
+    </div>
+  </fieldset>
+
+  {% if operacao in ['entrada', 'transferencia'] %}
+  <fieldset>
+    <legend>Destino</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="deposito_destino_id">Depósito destino *</label>
+        <select id="deposito_destino_id" name="deposito_destino_id" required data-loc-target="localizacao_destino_id">
+          <option value="">-- Selecione --</option>
+          {% for d in depositos %}<option value="{{ d.id }}">{{ d.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="localizacao_destino_id">Localização</label>
+        <select id="localizacao_destino_id" name="localizacao_destino_id">
+          <option value="">— Sem localização —</option>
+        </select>
+      </div>
+      {% if operacao == 'entrada' %}
+      <div class="form-group">
+        <label for="quantidade">Quantidade *</label>
+        <input type="number" id="quantidade" name="quantidade" min="1" required>
+      </div>
+      {% endif %}
+    </div>
+  </fieldset>
+  {% endif %}
+
+  {% if operacao in ['saida', 'transferencia', 'ajuste', 'inventario'] %}
+  <fieldset>
+    <legend>{% if operacao == 'transferencia' %}Origem{% else %}Local{% endif %}</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="deposito_origem_id">Depósito {% if operacao == 'transferencia' %}origem{% else %}{% endif %} *</label>
+        <select id="deposito_origem_id" name="{% if operacao in ['ajuste', 'inventario'] %}deposito_id{% else %}deposito_origem_id{% endif %}" required data-loc-target="{% if operacao == 'transferencia' %}localizacao_origem_id{% else %}localizacao_id{% endif %}" data-saldo="1">
+          <option value="">-- Selecione --</option>
+          {% for d in depositos %}<option value="{{ d.id }}">{{ d.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="{% if operacao == 'transferencia' %}localizacao_origem_id{% else %}localizacao_id{% endif %}">Localização</label>
+        <select id="{% if operacao == 'transferencia' %}localizacao_origem_id{% else %}localizacao_id{% endif %}" name="{% if operacao == 'transferencia' %}localizacao_origem_id{% else %}localizacao_id{% endif %}" data-saldo="1">
+          <option value="">— Sem localização —</option>
+        </select>
+      </div>
+      {% if operacao in ['saida', 'transferencia'] %}
+      <div class="form-group">
+        <label for="quantidade">Quantidade *</label>
+        <input type="number" id="quantidade" name="quantidade" min="1" required>
+      </div>
+      {% endif %}
+      {% if operacao in ['ajuste', 'inventario'] %}
+      <div class="form-group">
+        <label for="quantidade_nova">{{ meta.qty_label }} *</label>
+        <input type="number" id="quantidade_nova" name="quantidade_nova" min="0" required>
+      </div>
+      {% endif %}
+    </div>
+  </fieldset>
+  {% endif %}
+
+  {% if operacao == 'transferencia' %}
+  <fieldset>
+    <legend>Destino</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="deposito_destino_id">Depósito destino *</label>
+        <select id="deposito_destino_id" name="deposito_destino_id" required data-loc-target="localizacao_destino_id">
+          <option value="">-- Selecione --</option>
+          {% for d in depositos %}<option value="{{ d.id }}">{{ d.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="localizacao_destino_id">Localização destino</label>
+        <select id="localizacao_destino_id" name="localizacao_destino_id">
+          <option value="">— Sem localização —</option>
+        </select>
+      </div>
+    </div>
+  </fieldset>
+  {% endif %}
+
+  <fieldset>
+    <legend>Observações</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="observacao">Observação{% if operacao == 'ajuste' %} *{% endif %}</label>
+        <textarea id="observacao" name="observacao" rows="3" placeholder="{% if operacao == 'ajuste' %}Motivo obrigatório para o ajuste{% else %}Informações adicionais (opcional){% endif %}" {% if operacao == 'ajuste' %}required{% endif %}></textarea>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="buttons">
+    <button type="submit" class="btn-submit" {% if not materiais %}disabled{% endif %}>{{ meta.submit }}</button>
+    <a href="/paiol/estoque/consulta" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+
+<script>
+(function () {
+  var locs = {{ localizacoes_json|tojson }};
+
+  function fillLocalizacoes(depositoSelect, locSelectId) {
+    var locSelect = document.getElementById(locSelectId);
+    if (!locSelect) return;
+    var depId = parseInt(depositoSelect.value, 10);
+    locSelect.innerHTML = '<option value="">— Sem localização —</option>';
+    if (!depId) return;
+    locs.filter(function (l) { return l.deposito_id === depId; }).forEach(function (l) {
+      var opt = document.createElement("option");
+      opt.value = l.id;
+      opt.textContent = l.label;
+      locSelect.appendChild(opt);
+    });
+  }
+
+  function refreshSaldo() {
+    var form = document.getElementById("paiol-estoque-form");
+    var mat = document.getElementById("material_id");
+    var depId = form && form.getAttribute("data-saldo-dep");
+    var locId = form && form.getAttribute("data-saldo-loc");
+    var dep = depId ? document.getElementById(depId) : null;
+    var loc = locId ? document.getElementById(locId) : null;
+    var wrap = document.getElementById("saldo-atual-wrap");
+    var text = document.getElementById("saldo-atual-text");
+    if (!mat || !dep || !wrap || !text) return;
+    if (!mat.value || !dep.value) {
+      wrap.style.display = "none";
+      return;
+    }
+    var url = "/paiol/api/saldo-atual?material_id=" + encodeURIComponent(mat.value) +
+      "&deposito_id=" + encodeURIComponent(dep.value);
+    if (loc && loc.value) url += "&localizacao_id=" + encodeURIComponent(loc.value);
+    fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        wrap.style.display = "block";
+        text.textContent = d.quantidade + " un. (mínimo: " + d.quantidade_minima + ")";
+      })
+      .catch(function () { wrap.style.display = "none"; });
+  }
+
+  document.querySelectorAll("[data-loc-target]").forEach(function (depSel) {
+    depSel.addEventListener("change", function () {
+      fillLocalizacoes(depSel, depSel.getAttribute("data-loc-target"));
+      refreshSaldo();
+    });
+  });
+
+  var matSel = document.getElementById("material_id");
+  if (matSel) matSel.addEventListener("change", refreshSaldo);
+  var form = document.getElementById("paiol-estoque-form");
+  if (form) {
+    var locId = form.getAttribute("data-saldo-loc");
+    if (locId) {
+      var locEl = document.getElementById(locId);
+      if (locEl) locEl.addEventListener("change", refreshSaldo);
+    }
+    var depId = form.getAttribute("data-saldo-dep");
+    if (depId) {
+      var depEl = document.getElementById(depId);
+      if (depEl) depEl.addEventListener("change", refreshSaldo);
+    }
+  }
+})();
+</script>
+{% endblock %}

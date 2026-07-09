@@ -749,5 +749,301 @@ class ProdutoSegem(Base):
     descricao = Column(Text)
 
 
+# =====================================================
+# PAIOL — Divisão de Material Bélico (tabelas isoladas)
+# =====================================================
+
+class PaiolClasseMaterial(Base):
+    __tablename__ = "paiol_classes_material"
+
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(30), unique=True, nullable=False)
+    nome = Column(String(120), nullable=False)
+    descricao = Column(Text)
+    grupo_compatibilidade = Column(String(30))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    materiais = relationship("PaiolMaterial", back_populates="classe")
+
+
+class PaiolFabricante(Base):
+    __tablename__ = "paiol_fabricantes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(200), nullable=False, unique=True)
+    pais = Column(String(80))
+    cnpj = Column(String(20))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    materiais = relationship("PaiolMaterial", back_populates="fabricante")
+
+
+class PaiolFornecedor(Base):
+    __tablename__ = "paiol_fornecedores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(200), nullable=False)
+    cnpj = Column(String(20))
+    contato = Column(String(200))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PaiolDeposito(Base):
+    __tablename__ = "paiol_depositos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(30), unique=True, nullable=False)
+    nome = Column(String(200), nullable=False)
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False)
+    unidade_id = Column(Integer, ForeignKey("unidades.id"), nullable=True)
+    responsavel_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    endereco = Column(String(300))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    municipio = relationship("Municipio")
+    orgao = relationship("Orgao")
+    unidade = relationship("Unidade")
+    responsavel = relationship("User", foreign_keys=[responsavel_id])
+    localizacoes = relationship("PaiolLocalizacao", back_populates="deposito", cascade="all, delete-orphan")
+    saldos = relationship("PaiolSaldo", back_populates="deposito")
+    usuarios_autorizados = relationship("PaiolUsuarioAutorizado", back_populates="deposito")
+
+
+class PaiolLocalizacao(Base):
+    __tablename__ = "paiol_localizacoes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    deposito_id = Column(Integer, ForeignKey("paiol_depositos.id"), nullable=False)
+    codigo = Column(String(50), nullable=False)
+    descricao = Column(String(200))
+    ativo = Column(Boolean, default=True)
+
+    deposito = relationship("PaiolDeposito", back_populates="localizacoes")
+    saldos = relationship("PaiolSaldo", back_populates="localizacao")
+
+
+class PaiolMaterial(Base):
+    __tablename__ = "paiol_materiais"
+
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(50), unique=True, nullable=False)
+    nome = Column(String(200), nullable=False)
+    descricao = Column(Text)
+    tipo = Column(String(30), nullable=False)
+    calibre = Column(String(80))
+    classe_id = Column(Integer, ForeignKey("paiol_classes_material.id"), nullable=True)
+    fabricante_id = Column(Integer, ForeignKey("paiol_fabricantes.id"), nullable=True)
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False)
+    controla_por_serie = Column(Boolean, default=True)
+    controla_lote = Column(Boolean, default=False)
+    quantidade_minima = Column(Integer, default=0)
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"))
+
+    classe = relationship("PaiolClasseMaterial", back_populates="materiais")
+    fabricante = relationship("PaiolFabricante", back_populates="materiais")
+    municipio = relationship("Municipio")
+    orgao = relationship("Orgao")
+    itens = relationship("PaiolItem", back_populates="material", cascade="all, delete-orphan")
+    lotes = relationship("PaiolLote", back_populates="material", cascade="all, delete-orphan")
+    saldos = relationship("PaiolSaldo", back_populates="material", cascade="all, delete-orphan")
+    movimentacoes = relationship("PaiolMovimentacao", back_populates="material")
+
+
+class PaiolLote(Base):
+    __tablename__ = "paiol_lotes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    material_id = Column(Integer, ForeignKey("paiol_materiais.id"), nullable=False)
+    numero_lote = Column(String(80), nullable=False)
+    data_fabricacao = Column(Date)
+    data_validade = Column(Date)
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    material = relationship("PaiolMaterial", back_populates="lotes")
+    saldos = relationship("PaiolSaldo", back_populates="lote")
+
+
+class PaiolItem(Base):
+    __tablename__ = "paiol_itens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False)
+    material_id = Column(Integer, ForeignKey("paiol_materiais.id"), nullable=False)
+    deposito_id = Column(Integer, ForeignKey("paiol_depositos.id"), nullable=False)
+    localizacao_id = Column(Integer, ForeignKey("paiol_localizacoes.id"), nullable=True)
+    num_serie = Column(String(100), unique=True)
+    tombo = Column(String(100))
+    status = Column(String(50), default="Disponível")
+    observacao = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    municipio = relationship("Municipio")
+    orgao = relationship("Orgao")
+    material = relationship("PaiolMaterial", back_populates="itens")
+    deposito = relationship("PaiolDeposito")
+    localizacao = relationship("PaiolLocalizacao")
+    movimentacoes = relationship("PaiolMovimentacao", back_populates="item")
+
+
+class PaiolSaldo(Base):
+    __tablename__ = "paiol_saldos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False)
+    material_id = Column(Integer, ForeignKey("paiol_materiais.id"), nullable=False)
+    deposito_id = Column(Integer, ForeignKey("paiol_depositos.id"), nullable=False)
+    localizacao_id = Column(Integer, ForeignKey("paiol_localizacoes.id"), nullable=True)
+    lote_id = Column(Integer, ForeignKey("paiol_lotes.id"), nullable=True)
+    quantidade = Column(Integer, default=0)
+    quantidade_minima = Column(Integer, default=0)
+
+    municipio = relationship("Municipio")
+    orgao = relationship("Orgao")
+    material = relationship("PaiolMaterial", back_populates="saldos")
+    deposito = relationship("PaiolDeposito", back_populates="saldos")
+    localizacao = relationship("PaiolLocalizacao", back_populates="saldos")
+    lote = relationship("PaiolLote", back_populates="saldos")
+
+
+class PaiolMovimentacao(Base):
+    __tablename__ = "paiol_movimentacoes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    material_id = Column(Integer, ForeignKey("paiol_materiais.id"), nullable=True)
+    item_id = Column(Integer, ForeignKey("paiol_itens.id"), nullable=True)
+    requisicao_id = Column(Integer, ForeignKey("paiol_requisicoes.id"), nullable=True)
+    deposito_origem_id = Column(Integer, ForeignKey("paiol_depositos.id"))
+    deposito_destino_id = Column(Integer, ForeignKey("paiol_depositos.id"))
+    quantidade = Column(Integer, default=1)
+    tipo = Column(String(40), nullable=False)
+    status = Column(String(30), default="executado")
+    data = Column(DateTime, default=datetime.utcnow)
+    observacao = Column(Text)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    material = relationship("PaiolMaterial", back_populates="movimentacoes")
+    item = relationship("PaiolItem", back_populates="movimentacoes")
+    requisicao = relationship("PaiolRequisicao", back_populates="movimentacoes")
+    user = relationship("User")
+    deposito_origem = relationship("PaiolDeposito", foreign_keys=[deposito_origem_id])
+    deposito_destino = relationship("PaiolDeposito", foreign_keys=[deposito_destino_id])
+
+
+class PaiolUsuarioAutorizado(Base):
+    __tablename__ = "paiol_usuarios_autorizados"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    deposito_id = Column(Integer, ForeignKey("paiol_depositos.id"), nullable=True)
+    classe_id = Column(Integer, ForeignKey("paiol_classes_material.id"), nullable=True)
+    operacoes = Column(String(500))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    deposito = relationship("PaiolDeposito", back_populates="usuarios_autorizados")
+    classe = relationship("PaiolClasseMaterial")
+
+
+class PaiolCustodiaEvento(Base):
+    """Trilha imutável de custódia (append-only)."""
+    __tablename__ = "paiol_custodia_eventos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    evento = Column(String(50), nullable=False)
+    material_id = Column(Integer, ForeignKey("paiol_materiais.id"), nullable=True)
+    item_id = Column(Integer, ForeignKey("paiol_itens.id"), nullable=True)
+    deposito_id = Column(Integer, ForeignKey("paiol_depositos.id"), nullable=True)
+    documento_ref = Column(String(100))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    detalhes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    material = relationship("PaiolMaterial")
+    deposito = relationship("PaiolDeposito")
+
+
+class PaiolDashboardAtalho(Base):
+    """Atalhos personalizados da dashboard por usuário."""
+    __tablename__ = "paiol_dashboard_atalhos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    menu_key = Column(String(80), nullable=False)
+    sort_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
+class PaiolRequisicao(Base):
+    """Solicitação de material bélico por unidade."""
+    __tablename__ = "paiol_requisicoes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    numero = Column(String(30), nullable=False, index=True)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False)
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
+    solicitante_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    unidade_id = Column(Integer, ForeignKey("unidades.id"), nullable=True)
+    deposito_id = Column(Integer, ForeignKey("paiol_depositos.id"), nullable=True)
+    status = Column(String(30), default="rascunho", nullable=False)
+    observacao = Column(Text)
+    motivo_rejeicao = Column(Text)
+    aprovador_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    aprovado_em = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    orgao = relationship("Orgao")
+    municipio = relationship("Municipio")
+    solicitante = relationship("User", foreign_keys=[solicitante_id])
+    aprovador = relationship("User", foreign_keys=[aprovador_id])
+    unidade = relationship("Unidade")
+    deposito = relationship("PaiolDeposito")
+    itens = relationship("PaiolRequisicaoItem", back_populates="requisicao", cascade="all, delete-orphan")
+    movimentacoes = relationship("PaiolMovimentacao", back_populates="requisicao")
+
+
+class PaiolRequisicaoItem(Base):
+    __tablename__ = "paiol_requisicao_itens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    requisicao_id = Column(Integer, ForeignKey("paiol_requisicoes.id"), nullable=False)
+    material_id = Column(Integer, ForeignKey("paiol_materiais.id"), nullable=False)
+    quantidade_solicitada = Column(Integer, nullable=False, default=1)
+    quantidade_atendida = Column(Integer, nullable=False, default=0)
+
+    requisicao = relationship("PaiolRequisicao", back_populates="itens")
+    material = relationship("PaiolMaterial")
+
+
+class PaiolAssinatura(Base):
+    """Registro de assinatura em documentos críticos do paiol."""
+    __tablename__ = "paiol_assinaturas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    documento_tipo = Column(String(40), nullable=False)
+    documento_id = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    hash_registro = Column(String(128), nullable=False)
+    observacao = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
 # Alias legado: vários routers ainda importam Unit
 Unit = Unidade

@@ -1,0 +1,80 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}{{ 'Editar' if action == 'edit' else 'Novo' }} material — Paiol{% endblock %}
+{% block form_heading %}{{ 'Editar' if action == 'edit' else 'Novo' }} material bélico{% endblock %}
+{% block form_body %}
+<form method="post" action="{% if action == 'edit' %}/paiol/cadastro/materiais/edit/{{ item.id }}{% else %}/paiol/cadastro/materiais/add{% endif %}">
+  <fieldset>
+    <legend>Dados gerais</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="codigo">Código *</label>
+        <input type="text" id="codigo" name="codigo" required value="{{ item.codigo if action == 'edit' else '' }}">
+      </div>
+      <div class="form-group">
+        <label for="nome">Nome *</label>
+        <input type="text" id="nome" name="nome" required value="{{ item.nome if action == 'edit' else '' }}">
+      </div>
+      <div class="form-group">
+        <label for="tipo">Tipo *</label>
+        <select id="tipo" name="tipo" required>
+          {% for k, v in tipos.items() %}
+          <option value="{{ k.value }}" {% if (action == 'edit' and item.tipo == k.value) or (action == 'add' and tipo_default == k.value) %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="classe_id">Classe</label>
+        <select id="classe_id" name="classe_id">
+          <option value="">-- Selecione --</option>
+          {% for c in classes %}<option value="{{ c.id }}" {% if action == 'edit' and item.classe_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="fabricante_id">Fabricante</label>
+        <select id="fabricante_id" name="fabricante_id">
+          <option value="">-- Selecione --</option>
+          {% for f in fabricantes %}<option value="{{ f.id }}" {% if action == 'edit' and item.fabricante_id == f.id %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="calibre">Calibre</label>
+        <input type="text" id="calibre" name="calibre" value="{{ item.calibre if action == 'edit' else '' }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="descricao">Descrição</label>
+        <textarea id="descricao" name="descricao" rows="3">{{ item.descricao if action == 'edit' else '' }}</textarea>
+      </div>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Controle de estoque</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="quantidade_minima">Quantidade mínima</label>
+        <input type="number" id="quantidade_minima" name="quantidade_minima" min="0" value="{{ item.quantidade_minima if action == 'edit' else 0 }}">
+      </div>
+      <div class="form-group form-group--check">
+        <label><input type="checkbox" name="controla_por_serie" {% if action != 'edit' or item.controla_por_serie %}checked{% endif %}> Controla por série</label>
+      </div>
+      <div class="form-group form-group--check">
+        <label><input type="checkbox" name="controla_lote" {% if action == 'edit' and item.controla_lote %}checked{% endif %}> Controla por lote</label>
+      </div>
+    </div>
+    {% if action == 'edit' %}
+    <div class="form-row">
+      <div class="form-group form-group--check">
+        <label><input type="checkbox" name="ativo" {% if item.ativo %}checked{% endif %}> Ativo</label>
+      </div>
+    </div>
+    {% endif %}
+  </fieldset>
+  <div class="buttons">
+    <button type="submit" class="btn-submit">Salvar</button>
+    <a href="{{ cancel_url }}" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

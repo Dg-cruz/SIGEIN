@@ -1,0 +1,35 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}{{ 'Editar' if action == 'edit' else 'Novo' }} fornecedor — Paiol{% endblock %}
+{% block form_heading %}{{ 'Editar' if action == 'edit' else 'Novo' }} fornecedor{% endblock %}
+{% block form_body %}
+<form method="post" action="{% if action == 'edit' %}/paiol/cadastro/fornecedores/edit/{{ item.id }}{% else %}/paiol/cadastro/fornecedores/add{% endif %}">
+  <fieldset>
+    <legend>Dados do fornecedor</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="nome">Nome *</label>
+        <input type="text" id="nome" name="nome" required value="{{ item.nome if action == 'edit' else '' }}">
+      </div>
+      <div class="form-group">
+        <label for="cnpj">CNPJ</label>
+        <input type="text" id="cnpj" name="cnpj" value="{{ item.cnpj if action == 'edit' else '' }}">
+      </div>
+      <div class="form-group">
+        <label for="contato">Contato</label>
+        <input type="text" id="contato" name="contato" value="{{ item.contato if action == 'edit' else '' }}">
+      </div>
+    </div>
+    {% if action == 'edit' %}
+    <div class="form-row">
+      <div class="form-group form-group--check">
+        <label><input type="checkbox" name="ativo" {% if item.ativo %}checked{% endif %}> Ativo</label>
+      </div>
+    </div>
+    {% endif %}
+  </fieldset>
+  <div class="buttons">
+    <button type="submit" class="btn-submit">Salvar</button>
+    <a href="/paiol/cadastro/fornecedores" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

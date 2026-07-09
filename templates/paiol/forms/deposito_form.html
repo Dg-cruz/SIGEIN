@@ -1,0 +1,54 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}{{ 'Editar' if action == 'edit' else 'Novo' }} depósito — Paiol{% endblock %}
+{% block form_heading %}{{ 'Editar' if action == 'edit' else 'Novo' }} depósito / paiol{% endblock %}
+{% block form_body %}
+<form method="post" action="{% if action == 'edit' %}/paiol/cadastro/depositos/edit/{{ item.id }}{% else %}/paiol/cadastro/depositos/add{% endif %}">
+  <fieldset>
+    <legend>Identificação</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="codigo">Código *</label>
+        <input type="text" id="codigo" name="codigo" required value="{{ item.codigo if action == 'edit' else '' }}" placeholder="Ex: PAIOL-01">
+      </div>
+      <div class="form-group">
+        <label for="nome">Nome *</label>
+        <input type="text" id="nome" name="nome" required value="{{ item.nome if action == 'edit' else '' }}">
+      </div>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Vínculos e localização</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="unidade_id">Unidade vinculada</label>
+        <select id="unidade_id" name="unidade_id">
+          <option value="">-- Selecione --</option>
+          {% for u in unidades %}<option value="{{ u.id }}" {% if action == 'edit' and item.unidade_id == u.id %}selected{% endif %}>{{ u.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="responsavel_id">Responsável</label>
+        <select id="responsavel_id" name="responsavel_id">
+          <option value="">-- Selecione --</option>
+          {% for u in usuarios %}<option value="{{ u.id }}" {% if action == 'edit' and item.responsavel_id == u.id %}selected{% endif %}>{{ u.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="endereco">Endereço</label>
+        <input type="text" id="endereco" name="endereco" value="{{ item.endereco if action == 'edit' else '' }}">
+      </div>
+    </div>
+    {% if action == 'edit' %}
+    <div class="form-row">
+      <div class="form-group form-group--check">
+        <label><input type="checkbox" name="ativo" {% if item.ativo %}checked{% endif %}> Ativo</label>
+      </div>
+    </div>
+    {% endif %}
+  </fieldset>
+  <div class="buttons">
+    <button type="submit" class="btn-submit">Salvar</button>
+    <a href="/paiol/cadastro/depositos" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

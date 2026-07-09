@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Depósitos — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Depósitos / Paióis", "Locais físicos de armazenamento.", "/paiol/cadastro/depositos/add", "Novo depósito", "fa-warehouse", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Código", 0, "Filtrar por código...", "filter-codigo") }}
+  {{ mod.filter_text("Nome", 1, "Filtrar por nome...", "filter-nome") }}
+  {{ mod.filter_text("Órgão", 2, "Filtrar por órgão...", "filter-orgao") }}
+  {{ mod.filter_checkbox_options("Status", 4, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Depósitos cadastrados", "paiol-depositos-count") }}
+  {% if depositos %}
+  <table id="paiolDepositosTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-status">Código</th>
+        <th class="mod-col-main">Nome</th>
+        <th>Órgão</th>
+        <th>Responsável</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in depositos %}
+      <tr>
+        <td data-search="{{ d.codigo }}"><strong>{{ d.codigo }}</strong></td>
+        <td><strong>{{ d.nome }}</strong></td>
+        <td data-search="{{ d.orgao.nome if d.orgao else '' }}">{{ d.orgao.nome if d.orgao else '—' }}</td>
+        <td data-search="{{ d.responsavel.nome if d.responsavel else '' }}">{{ d.responsavel.nome if d.responsavel else '—' }}</td>
+        <td data-search="{{ 'Ativo' if d.ativo else 'Inativo' }}">{{ mod.status_ativo(d.ativo) }}</td>
+        <td>{{ mod.actions("/paiol/cadastro/depositos/edit/" ~ d.id) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhum depósito cadastrado.", "/paiol/cadastro/depositos/add", "Cadastrar depósito") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolDepositosTable",
+  "paiol-depositos-count",
+  [[1, "asc"]],
+  [
+    {"targets": 0, "width": "7.5rem", "className": "mod-col-status"},
+    {"targets": 1, "className": "mod-col-main"},
+    {"targets": 4, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 5, "width": "5.75rem", "className": "mod-col-actions"}
+  ],
+  [
+    {"col": 0, "input": "#filter-codigo"},
+    {"col": 1, "input": "#filter-nome"},
+    {"col": 2, "input": "#filter-orgao"}
+  ],
+  depositos|length > 0
+) }}
+{% endblock %}

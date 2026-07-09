@@ -95,6 +95,15 @@
   color: var(--mod-primary);
 }
 
+.mod-btn--back {
+  color: var(--mod-primary);
+  font-weight: 600;
+}
+
+.mod-btn--back:hover {
+  background: #eff6ff;
+}
+
 /* KPI cards */
 .mod-kpi-grid {
   display: grid;

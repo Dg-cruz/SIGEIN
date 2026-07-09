@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Assinaturas — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Assinatura digital", "Registros de assinatura em documentos críticos.", none, "", "fa-signature", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Documento", 1, "Filtrar por tipo...", "filter-doc") }}
+  {{ mod.filter_text("Usuário", 2, "Filtrar por usuário...", "filter-usuario") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Assinaturas registradas", "paiol-assinaturas-count") }}
+  {% if assinaturas %}
+  <table id="paiolAssinaturasTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-status">Data</th>
+        <th>Documento</th>
+        <th class="mod-col-main">Usuário</th>
+        <th class="mod-col-desc">Hash</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in assinaturas %}
+      <tr>
+        <td data-order="{{ a.created_at.isoformat() if a.created_at else '' }}">{{ a.created_at.strftime('%d/%m/%Y %H:%M') if a.created_at else '—' }}</td>
+        <td data-search="{{ a.documento_tipo }}">{{ a.documento_tipo }} #{{ a.documento_id }}</td>
+        <td data-search="{{ a.user.nome if a.user else '' }}"><strong>{{ a.user.nome if a.user else '—' }}</strong></td>
+        <td><code style="font-size:0.75rem;">{{ a.hash_registro[:16] }}…</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhuma assinatura registrada.") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolAssinaturasTable",
+  "paiol-assinaturas-count",
+  [[0, "desc"]],
+  [{"targets": 2, "className": "mod-col-main"}],
+  [
+    {"col": 1, "input": "#filter-doc"},
+    {"col": 2, "input": "#filter-usuario"}
+  ],
+  assinaturas|length > 0
+) }}
+{% endblock %}

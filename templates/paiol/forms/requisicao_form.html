@@ -1,0 +1,93 @@
+{% extends "paiol/forms/base_form.html" %}
+{% block title %}{{ 'Editar' if action == 'edit' else 'Nova' }} requisição — Paiol{% endblock %}
+{% block form_heading %}{{ 'Editar' if action == 'edit' else 'Nova' }} requisição de material{% endblock %}
+{% block form_body %}
+{% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+<form method="post" action="{% if action == 'edit' %}/paiol/movimentacoes/requisicoes/edit/{{ item.id }}{% else %}/paiol/movimentacoes/requisicoes/add{% endif %}">
+  <fieldset>
+    <legend>Dados da requisição</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="unidade_id">Unidade solicitante</label>
+        <select id="unidade_id" name="unidade_id">
+          <option value="">— Selecione —</option>
+          {% for u in unidades %}
+          <option value="{{ u.id }}" {% if item and item.unidade_id == u.id %}selected{% endif %}>{{ u.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="deposito_id">Depósito de atendimento</label>
+        <select id="deposito_id" name="deposito_id">
+          <option value="">— Selecione —</option>
+          {% for d in depositos %}
+          <option value="{{ d.id }}" {% if item and item.deposito_id == d.id %}selected{% endif %}>{{ d.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="observacao">Observação</label>
+        <textarea id="observacao" name="observacao" rows="2">{{ item.observacao if item else '' }}</textarea>
+      </div>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Itens solicitados</legend>
+    <div id="itens-container">
+      {% if item and item.itens %}
+        {% for it in item.itens %}
+        <div class="form-row item-row">
+          <div class="form-group">
+            <label>Material *</label>
+            <select name="material_id" required>
+              <option value="">— Selecione —</option>
+              {% for m in materiais %}
+              <option value="{{ m.id }}" {% if it.material_id == m.id %}selected{% endif %}>{{ m.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quantidade *</label>
+            <input type="number" name="quantidade" min="1" required value="{{ it.quantidade_solicitada }}">
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="form-row item-row">
+          <div class="form-group">
+            <label>Material *</label>
+            <select name="material_id" required>
+              <option value="">— Selecione —</option>
+              {% for m in materiais %}
+              <option value="{{ m.id }}">{{ m.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quantidade *</label>
+            <input type="number" name="quantidade" min="1" required value="1">
+          </div>
+        </div>
+      {% endif %}
+    </div>
+    <button type="button" class="btn-cancel" id="add-item" style="margin-top:0.5rem;">+ Adicionar item</button>
+  </fieldset>
+  <div class="buttons">
+    <button type="submit" class="btn-submit">Salvar</button>
+    <a href="/paiol/movimentacoes/requisicoes" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+<script>
+document.getElementById('add-item').addEventListener('click', function() {
+  const container = document.getElementById('itens-container');
+  const first = container.querySelector('.item-row');
+  if (!first) return;
+  container.appendChild(first.cloneNode(true));
+  const last = container.lastElementChild;
+  last.querySelector('select').selectedIndex = 0;
+  last.querySelector('input[type=number]').value = 1;
+});
+</script>
+{% endblock %}
