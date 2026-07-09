@@ -12,11 +12,16 @@
       </div>
       <div class="form-group">
         <label for="pais">País</label>
-        <input type="text" id="pais" name="pais" value="{{ item.pais if action == 'edit' else '' }}">
+        <select id="pais" name="pais">
+          <option value="">— Selecione o país —</option>
+        </select>
+        <small id="pais-loading" class="mod-muted" style="display:none; font-size:0.78rem;">Carregando países...</small>
       </div>
       <div class="form-group">
         <label for="cnpj">CNPJ</label>
-        <input type="text" id="cnpj" name="cnpj" value="{{ item.cnpj if action == 'edit' else '' }}">
+        <input type="text" id="cnpj" name="cnpj" inputmode="numeric" maxlength="18"
+               placeholder="00.000.000/0000-00"
+               value="{{ (item.cnpj if action == 'edit' else '') | format_cnpj }}">
       </div>
     </div>
     {% if action == 'edit' %}
@@ -32,4 +37,62 @@
     <a href="/paiol/cadastro/fabricantes" class="btn-cancel">Cancelar</a>
   </div>
 </form>
+
+<script>
+(function () {
+  var selectPais = document.getElementById("pais");
+  var loading = document.getElementById("pais-loading");
+  var cnpjInput = document.getElementById("cnpj");
+  var paisSelecionado = {{ (item.pais if action == 'edit' and item.pais else '') | tojson }};
+
+  function onlyDigits(v) {
+    return String(v || "").replace(/\D/g, "");
+  }
+
+  function maskCNPJ(value) {
+    var digits = onlyDigits(value).slice(0, 14);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return digits.replace(/^(\d{2})(\d+)/, "$1.$2");
+    if (digits.length <= 8) return digits.replace(/^(\d{2})(\d{3})(\d+)/, "$1.$2.$3");
+    if (digits.length <= 12) return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d+)/, "$1.$2.$3/$4");
+    return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d+)/, "$1.$2.$3/$4-$5");
+  }
+
+  function carregarPaises() {
+    if (!selectPais) return;
+    loading.style.display = "block";
+    fetch("/paiol/cadastro/fabricantes/paises")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var paises = (data && data.paises) || [];
+        paises.forEach(function (p) {
+          var opt = document.createElement("option");
+          opt.value = p.value;
+          opt.textContent = p.label;
+          selectPais.appendChild(opt);
+        });
+        if (paisSelecionado) selectPais.value = paisSelecionado;
+      })
+      .catch(function () {
+        var opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Não foi possível carregar os países";
+        opt.disabled = true;
+        selectPais.appendChild(opt);
+      })
+      .finally(function () {
+        loading.style.display = "none";
+      });
+  }
+
+  if (cnpjInput) {
+    cnpjInput.addEventListener("input", function () {
+      cnpjInput.value = maskCNPJ(cnpjInput.value);
+    });
+    if (cnpjInput.value) cnpjInput.value = maskCNPJ(cnpjInput.value);
+  }
+
+  carregarPaises();
+})();
+</script>
 {% endblock %}

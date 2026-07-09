@@ -3,6 +3,147 @@
 import enum
 
 
+class CategoriaTipoMaterial(str, enum.Enum):
+    ARMAMENTO = "armamento"
+    MUNICOES_EXPLOSIVOS = "municoes_explosivos"
+    SISTEMAS_OPTICOS = "sistemas_opticos"
+    EPI = "epi"
+
+
+CATEGORIA_TIPO_MATERIAL_LABELS = {
+    CategoriaTipoMaterial.ARMAMENTO: "Armamento Leve e Pesado",
+    CategoriaTipoMaterial.MUNICOES_EXPLOSIVOS: "Munições e Explosivos",
+    CategoriaTipoMaterial.SISTEMAS_OPTICOS: "Sistemas Ópticos e Eletrônicos",
+    CategoriaTipoMaterial.EPI: "Equipamentos de Proteção Individual (EPI)",
+}
+
+CATEGORIA_TIPO_MATERIAL_DESCRICOES = {
+    CategoriaTipoMaterial.ARMAMENTO: (
+        "Rifles, pistolas, metralhadoras, morteiros e canhões. "
+        "Controlados por número de série e histórico individual de manutenção."
+    ),
+    CategoriaTipoMaterial.MUNICOES_EXPLOSIVOS: (
+        "Projéteis, granadas, pólvora e artefatos pirotécnicos."
+    ),
+    CategoriaTipoMaterial.SISTEMAS_OPTICOS: (
+        "Óculos de visão noturna, miras a laser, telêmetros e sistemas de comunicação táticos."
+    ),
+    CategoriaTipoMaterial.EPI: (
+        "Coletes balísticos, capacetes, escudos e máscaras de proteção química."
+    ),
+}
+
+CATEGORIA_TIPO_PREFIX = {
+    CategoriaTipoMaterial.ARMAMENTO.value: "ARM",
+    CategoriaTipoMaterial.MUNICOES_EXPLOSIVOS.value: "MUN",
+    CategoriaTipoMaterial.SISTEMAS_OPTICOS.value: "OPT",
+    CategoriaTipoMaterial.EPI.value: "EPI",
+}
+
+MUNICAO_QUANTIDADE_TIPOS = [
+    ("unidade", "Unidade"),
+    ("caixa", "Caixa"),
+    ("lote", "Lote"),
+]
+
+MUNICAO_CAMPOS = [
+    {
+        "name": "nome_comercial",
+        "label": "Descrição / Nome comercial",
+        "type": "textarea",
+        "required": True,
+        "placeholder": "Ex.: MUNIÇÃO 9MM LUGER OGIVAL 115GR",
+        "full_width": True,
+    },
+    {
+        "name": "calibre",
+        "label": "Calibre",
+        "type": "text",
+        "required": True,
+        "placeholder": "Ex.: .38 SPL, 9 × 19 mm, .45 ACP",
+    },
+    {
+        "name": "fabricante_marca",
+        "label": "Fabricante / Marca",
+        "type": "select",
+        "required": True,
+        "options_source": "fabricantes",
+        "empty_label": "Nenhum fabricante cadastrado",
+    },
+    {
+        "name": "quantidade",
+        "label": "Quantidade",
+        "type": "quantidade",
+        "required": True,
+        "full_width": True,
+    },
+]
+
+# Campos exibidos no cadastro após selecionar a categoria (extensível por tipo)
+CATEGORIA_TIPO_MATERIAL_CAMPOS = {
+    CategoriaTipoMaterial.ARMAMENTO.value: [
+        {
+            "name": "especie",
+            "label": "Espécie",
+            "type": "select",
+            "required": True,
+            "options": ["Pistola", "Revólver", "Espingarda", "Carabina", "Rifle"],
+        },
+        {
+            "name": "marca_fabricante",
+            "label": "Marca / Fabricante",
+            "type": "select",
+            "required": True,
+            "options_source": "fabricantes",
+            "empty_label": "Nenhum fabricante cadastrado",
+        },
+        {
+            "name": "modelo",
+            "label": "Modelo",
+            "type": "text",
+            "required": True,
+            "placeholder": "Ex.: PT G2C, TH40, Pump",
+        },
+        {
+            "name": "numero_serie",
+            "label": "Número de série",
+            "type": "text",
+            "required": True,
+            "placeholder": "Chave de controle do armamento",
+            "help": "Campo obrigatório e chave de controle.",
+        },
+        {
+            "name": "calibre",
+            "label": "Calibre",
+            "type": "select",
+            "required": True,
+            "options_source": "calibres",
+            "empty_label": "Nenhum calibre cadastrado em Munições",
+            "help": "Diâmetro do cano ou da munição utilizada.",
+        },
+    ],
+    CategoriaTipoMaterial.MUNICOES_EXPLOSIVOS.value: MUNICAO_CAMPOS,
+    CategoriaTipoMaterial.SISTEMAS_OPTICOS.value: [
+        {
+            "name": "especie",
+            "label": "Espécie",
+            "type": "text",
+            "required": True,
+            "placeholder": "Ex.: Visão noturna, mira laser, telêmetro, rádio tático",
+        },
+    ],
+    CategoriaTipoMaterial.EPI.value: [
+        {
+            "name": "especie",
+            "label": "Espécie",
+            "type": "text",
+            "required": True,
+            "placeholder": "Ex.: Colete balístico, capacete, escudo, máscara química",
+        },
+    ],
+}
+
+
 class TipoMaterialPaiol(str, enum.Enum):
     ARMA = "arma"
     MUNICAO = "municao"
@@ -84,6 +225,7 @@ PAIOL_MENU_CATALOG = [
     {"key": "cadastro.municoes", "url": "/paiol/cadastro/municoes", "label": "Munições", "subtitle": "Catálogo de munições", "icon": "fa-bullseye", "group": "Cadastro"},
     {"key": "cadastro.explosivos", "url": "/paiol/cadastro/explosivos", "label": "Explosivos", "subtitle": "Explosivos e detonantes", "icon": "fa-bomb", "group": "Cadastro"},
     {"key": "cadastro.acessorios", "url": "/paiol/cadastro/acessorios", "label": "Acessórios", "subtitle": "Coletes, coldres e similares", "icon": "fa-toolbox", "group": "Cadastro"},
+    {"key": "cadastro.tipos-material", "url": "/paiol/cadastro/tipos-material", "label": "Tipos de materiais", "subtitle": "Categorias e espécies de material", "icon": "fa-tags", "group": "Cadastro"},
     {"key": "cadastro.classes", "url": "/paiol/cadastro/classes", "label": "Classes de material", "subtitle": "Classificação e compatibilidade", "icon": "fa-layer-group", "group": "Cadastro"},
     {"key": "cadastro.fabricantes", "url": "/paiol/cadastro/fabricantes", "label": "Fabricantes", "subtitle": "Cadastro de fabricantes", "icon": "fa-industry", "group": "Cadastro"},
     {"key": "cadastro.fornecedores", "url": "/paiol/cadastro/fornecedores", "label": "Fornecedores", "subtitle": "Cadastro de fornecedores", "icon": "fa-truck", "group": "Cadastro"},

@@ -1,13 +1,17 @@
 from typing import Optional
+import re
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_302_FOUND
 
 from database import get_db
 from dependencies import get_current_user
 from services.paiol_audit import log_paiol
+from services.paiol_helpers import opcoes_campos_tipo_material, user_context
+from services.restcountries_service import listar_paises
+from templating import format_cnpj, limpar_cnpj, templates
 from models import (
     PaiolClasseMaterial,
     PaiolDeposito,
@@ -15,13 +19,69 @@ from models import (
     PaiolFornecedor,
     PaiolLocalizacao,
     PaiolMaterial,
+    PaiolMunicao,
+    PaiolTipoMaterial,
     PaiolUsuarioAutorizado,
     Unidade,
     User,
 )
-from paiol_constants import TIPO_MATERIAL_LABELS, material_list_url
-from services.paiol_helpers import user_context
-from templating import templates
+from paiol_constants import (
+    CategoriaTipoMaterial,
+    CATEGORIA_TIPO_MATERIAL_CAMPOS,
+    CATEGORIA_TIPO_MATERIAL_LABELS,
+    CATEGORIA_TIPO_PREFIX,
+    MUNICAO_QUANTIDADE_TIPOS,
+    TIPO_MATERIAL_LABELS,
+    material_list_url,
+)
+
+_CATEGORIAS_VALIDAS = {c.value for c in CategoriaTipoMaterial}
+
+
+def _extrair_campos_tipo(categoria: str, data: dict) -> tuple[str | None, dict | None, str | None]:
+    """Retorna (especie, detalhes, mensagem_erro)."""
+    campos = CATEGORIA_TIPO_MATERIAL_CAMPOS.get(categoria, [])
+    if not campos:
+        return None, None, "Categoria sem campos configurados."
+
+    especie = ""
+    detalhes: dict = {}
+    for campo in campos:
+        nome = campo["name"]
+        valor = (data.get(nome) or "").strip() if isinstance(data.get(nome), str) else data.get(nome)
+        if campo.get("required") and not valor:
+            return None, None, f"Informe o campo {campo['label']}."
+        if nome == "especie":
+            especie = str(valor or "").strip()
+        else:
+            detalhes[nome] = str(valor or "").strip()
+
+    if not especie:
+        return None, None, "Informe a espécie."
+
+    return especie, detalhes or None, None
+
+
+def _tipo_duplicado(
+    db: Session,
+    categoria: str,
+    especie: str,
+    detalhes: dict | None,
+    exclude_id: int | None = None,
+) -> bool:
+    registros = db.query(PaiolTipoMaterial).filter(PaiolTipoMaterial.categoria == categoria).all()
+    for row in registros:
+        if exclude_id and row.id == exclude_id:
+            continue
+        if categoria == CategoriaTipoMaterial.ARMAMENTO.value and detalhes:
+            serie = (detalhes.get("numero_serie") or "").strip()
+            if serie and (row.detalhes or {}).get("numero_serie") == serie:
+                return True
+            continue
+        if row.especie == especie:
+            return True
+    return False
+
 
 router = APIRouter(prefix="/paiol/cadastro", tags=["Paiol — Cadastro"])
 
@@ -32,8 +92,237 @@ def _redirect_login(user: str):
     return None
 
 
+def _api_auth(user: str):
+    if not user:
+        return JSONResponse({"ok": False, "detail": "Não autenticado."}, status_code=401)
+    return None
+
+
 def _form_ctx(request: Request, **extra):
     return {"request": request, "hide_app_header": True, **extra}
+
+
+def _normalizar_cnpj(value: str) -> str | None:
+    digits = limpar_cnpj(value)
+    if not digits:
+        return None
+    if len(digits) != 14:
+        return digits
+    return format_cnpj(digits)
+
+
+def _gerar_codigo_municao(db: Session, nome: str) -> str:
+    slug = re.sub(r"[^A-Z0-9]+", "-", nome.strip().upper()).strip("-")[:24] or "MUNICAO"
+    base = f"MUN-{slug}"
+    codigo = base
+    n = 1
+    while db.query(PaiolMunicao).filter(PaiolMunicao.codigo == codigo).first():
+        codigo = f"{base}-{n}"
+        n += 1
+    return codigo
+
+
+def _parse_municao_payload(data: dict) -> tuple[dict | None, str | None]:
+    nome = (data.get("nome_comercial") or "").strip()
+    calibre = (data.get("calibre") or "").strip()
+    fabricante = (data.get("fabricante_marca") or "").strip()
+    q_tipo = (data.get("quantidade_tipo") or "").strip().lower()
+    q_valor_raw = data.get("quantidade_valor")
+    tipos_validos = {t[0] for t in MUNICAO_QUANTIDADE_TIPOS}
+
+    if not nome:
+        return None, "Informe a descrição / nome comercial."
+    if not calibre:
+        return None, "Informe o calibre."
+    if not fabricante:
+        return None, "Selecione o fabricante / marca."
+    if q_tipo not in tipos_validos:
+        return None, "Selecione o tipo de quantidade (Unidade, Caixa ou Lote)."
+    try:
+        q_valor = int(q_valor_raw)
+    except (TypeError, ValueError):
+        return None, "Informe a quantidade numérica."
+    if q_valor < 1:
+        return None, "A quantidade deve ser maior que zero."
+
+    return {
+        "nome_comercial": nome,
+        "calibre": calibre,
+        "fabricante_marca": fabricante,
+        "quantidade_tipo": q_tipo,
+        "quantidade_valor": q_valor,
+    }, None
+
+
+def _aplicar_fabricante_municao(db: Session, dados: dict) -> str | None:
+    fab = (
+        db.query(PaiolFabricante)
+        .filter(PaiolFabricante.nome == dados["fabricante_marca"], PaiolFabricante.ativo == True)
+        .first()
+    )
+    if not fab:
+        return "Selecione um fabricante cadastrado em Fabricantes."
+    dados["fabricante_id"] = fab.id
+    return None
+
+
+def _gerar_codigo_tipo(db: Session, categoria: str, especie: str, detalhes: dict | None = None) -> str:
+    prefix = CATEGORIA_TIPO_PREFIX.get(categoria, "TIP")
+    if categoria == CategoriaTipoMaterial.ARMAMENTO.value and detalhes:
+        serie = re.sub(r"[^A-Z0-9]+", "-", (detalhes.get("numero_serie") or "").strip().upper()).strip("-")
+        if serie:
+            base = f"{prefix}-{serie[:20]}"
+        else:
+            slug = re.sub(r"[^A-Z0-9]+", "-", especie.strip().upper()).strip("-")[:24] or "SEM-NOME"
+            base = f"{prefix}-{slug}"
+    else:
+        slug = re.sub(r"[^A-Z0-9]+", "-", especie.strip().upper()).strip("-")[:24] or "SEM-NOME"
+        base = f"{prefix}-{slug}"
+    codigo = base
+    n = 1
+    while db.query(PaiolTipoMaterial).filter(PaiolTipoMaterial.codigo == codigo).first():
+        codigo = f"{base}-{n}"
+        n += 1
+    return codigo
+
+
+def _validar_opcoes_armamento(db: Session, detalhes: dict | None) -> str | None:
+    if not detalhes:
+        return None
+    nome = (detalhes.get("marca_fabricante") or "").strip()
+    calibre = (detalhes.get("calibre") or "").strip()
+    if nome:
+        fab = db.query(PaiolFabricante).filter(
+            PaiolFabricante.nome == nome,
+            PaiolFabricante.ativo == True,
+        ).first()
+        if not fab:
+            return "Selecione um fabricante cadastrado em Fabricantes."
+        detalhes["fabricante_id"] = fab.id
+    if calibre:
+        mun = db.query(PaiolMunicao).filter(
+            PaiolMunicao.calibre == calibre,
+            PaiolMunicao.ativo == True,
+        ).first()
+        if not mun:
+            return "Selecione um calibre cadastrado em Munições."
+        detalhes["municao_id"] = mun.id
+    return None
+
+
+# ── Tipos de material ──────────────────────────────────────
+
+@router.get("/tipos-material/opcoes")
+def tipo_material_opcoes(db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    if r := _api_auth(user):
+        return r
+    return JSONResponse({"ok": True, "opcoes": opcoes_campos_tipo_material(db)})
+
+
+# ── Tipos de material (API) ────────────────────────────────
+
+@router.get("/tipos-material/api/{item_id}")
+def tipo_material_api_get(
+    item_id: int,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    item = db.query(PaiolTipoMaterial).get(item_id)
+    if not item:
+        return JSONResponse({"ok": False, "detail": "Registro não encontrado."}, status_code=404)
+    return JSONResponse(
+        {
+            "ok": True,
+            "item": {
+                "id": item.id,
+                "codigo": item.codigo,
+                "categoria": item.categoria,
+                "especie": item.especie,
+                "descricao": item.descricao or "",
+                "detalhes": item.detalhes or {},
+                "ativo": item.ativo,
+            },
+        }
+    )
+
+
+@router.post("/tipos-material/api")
+async def tipo_material_api_create(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    data = await request.json()
+    categoria = (data.get("categoria") or "").strip()
+    descricao = (data.get("descricao") or "").strip() or None
+    if categoria not in _CATEGORIAS_VALIDAS:
+        return JSONResponse({"ok": False, "detail": "Categoria inválida."}, status_code=400)
+    especie, detalhes, erro = _extrair_campos_tipo(categoria, data)
+    if erro:
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    if categoria == CategoriaTipoMaterial.ARMAMENTO.value:
+        erro_opcoes = _validar_opcoes_armamento(db, detalhes)
+        if erro_opcoes:
+            return JSONResponse({"ok": False, "detail": erro_opcoes}, status_code=400)
+    if _tipo_duplicado(db, categoria, especie, detalhes):
+        msg = "Já existe um armamento com este número de série." if categoria == CategoriaTipoMaterial.ARMAMENTO.value else "Já existe um tipo com esta categoria e espécie."
+        return JSONResponse({"ok": False, "detail": msg}, status_code=400)
+    item = PaiolTipoMaterial(
+        codigo=_gerar_codigo_tipo(db, categoria, especie, detalhes),
+        categoria=categoria,
+        especie=especie,
+        descricao=descricao,
+        detalhes=detalhes,
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    log_paiol(db, user, request, f"Cadastrou tipo de material {item.especie} ({item.codigo})")
+    return JSONResponse({"ok": True, "id": item.id})
+
+
+@router.post("/tipos-material/api/{item_id}")
+async def tipo_material_api_update(
+    item_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    item = db.query(PaiolTipoMaterial).get(item_id)
+    if not item:
+        return JSONResponse({"ok": False, "detail": "Registro não encontrado."}, status_code=404)
+    data = await request.json()
+    categoria = (data.get("categoria") or "").strip()
+    descricao = (data.get("descricao") or "").strip() or None
+    ativo = data.get("ativo", True)
+    if categoria not in _CATEGORIAS_VALIDAS:
+        return JSONResponse({"ok": False, "detail": "Categoria inválida."}, status_code=400)
+    especie, detalhes, erro = _extrair_campos_tipo(categoria, data)
+    if erro:
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    if categoria == CategoriaTipoMaterial.ARMAMENTO.value:
+        erro_opcoes = _validar_opcoes_armamento(db, detalhes)
+        if erro_opcoes:
+            return JSONResponse({"ok": False, "detail": erro_opcoes}, status_code=400)
+    if _tipo_duplicado(db, categoria, especie, detalhes, exclude_id=item_id):
+        msg = "Já existe um armamento com este número de série." if categoria == CategoriaTipoMaterial.ARMAMENTO.value else "Já existe um tipo com esta categoria e espécie."
+        return JSONResponse({"ok": False, "detail": msg}, status_code=400)
+    if item.categoria != categoria or item.especie != especie or item.detalhes != detalhes:
+        item.codigo = _gerar_codigo_tipo(db, categoria, especie, detalhes)
+    item.categoria = categoria
+    item.especie = especie
+    item.descricao = descricao
+    item.detalhes = detalhes
+    item.ativo = bool(ativo)
+    db.commit()
+    log_paiol(db, user, request, f"Editou tipo de material {item.especie} (ID {item_id})")
+    return JSONResponse({"ok": True})
 
 
 # ── Classes ────────────────────────────────────────────────
@@ -109,6 +398,13 @@ def classe_edit(
 
 # ── Fabricantes ────────────────────────────────────────────
 
+@router.get("/fabricantes/paises")
+def fabricante_paises(user: str = Depends(get_current_user)):
+    if r := _redirect_login(user):
+        return r
+    return JSONResponse({"ok": True, "paises": listar_paises()})
+
+
 @router.get("/fabricantes/add")
 def fabricante_add_form(request: Request, user: str = Depends(get_current_user)):
     if r := _redirect_login(user):
@@ -127,7 +423,7 @@ def fabricante_add(
 ):
     if r := _redirect_login(user):
         return r
-    db.add(PaiolFabricante(nome=nome.strip(), pais=pais.strip() or None, cnpj=cnpj.strip() or None))
+    db.add(PaiolFabricante(nome=nome.strip(), pais=pais.strip() or None, cnpj=_normalizar_cnpj(cnpj)))
     db.commit()
     log_paiol(db, user, request, f"Cadastrou fabricante {nome.strip()}")
     return RedirectResponse("/paiol/cadastro/fabricantes", status_code=HTTP_302_FOUND)
@@ -161,11 +457,103 @@ def fabricante_edit(
         return RedirectResponse("/paiol/cadastro/fabricantes", status_code=HTTP_302_FOUND)
     item.nome = nome.strip()
     item.pais = pais.strip() or None
-    item.cnpj = cnpj.strip() or None
+    item.cnpj = _normalizar_cnpj(cnpj)
     item.ativo = ativo == "on"
     db.commit()
     log_paiol(db, user, request, f"Editou fabricante {nome.strip()} (ID {item_id})")
     return RedirectResponse("/paiol/cadastro/fabricantes", status_code=HTTP_302_FOUND)
+
+
+# ── Munições ───────────────────────────────────────────────
+
+@router.get("/municoes/api/{item_id}")
+def municao_api_get(
+    item_id: int,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    item = db.query(PaiolMunicao).get(item_id)
+    if not item:
+        return JSONResponse({"ok": False, "detail": "Registro não encontrado."}, status_code=404)
+    return JSONResponse(
+        {
+            "ok": True,
+            "item": {
+                "id": item.id,
+                "codigo": item.codigo,
+                "nome_comercial": item.nome_comercial,
+                "calibre": item.calibre,
+                "fabricante_marca": item.fabricante_marca or "",
+                "quantidade_tipo": item.quantidade_tipo or "",
+                "quantidade_valor": item.quantidade_valor or "",
+                "ativo": item.ativo,
+            },
+        }
+    )
+
+
+@router.post("/municoes/api")
+async def municao_api_create(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    data = await request.json()
+    dados, erro = _parse_municao_payload(data)
+    if erro:
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    if erro := _aplicar_fabricante_municao(db, dados):
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    item = PaiolMunicao(
+        codigo=_gerar_codigo_municao(db, dados["nome_comercial"]),
+        nome_comercial=dados["nome_comercial"],
+        calibre=dados["calibre"],
+        fabricante_marca=dados["fabricante_marca"],
+        fabricante_id=dados.get("fabricante_id"),
+        quantidade_tipo=dados["quantidade_tipo"],
+        quantidade_valor=dados["quantidade_valor"],
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    log_paiol(db, user, request, f"Cadastrou munição {item.nome_comercial} ({item.codigo})")
+    return JSONResponse({"ok": True, "id": item.id})
+
+
+@router.post("/municoes/api/{item_id}")
+async def municao_api_update(
+    item_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    item = db.query(PaiolMunicao).get(item_id)
+    if not item:
+        return JSONResponse({"ok": False, "detail": "Registro não encontrado."}, status_code=404)
+    data = await request.json()
+    dados, erro = _parse_municao_payload(data)
+    if erro:
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    if erro := _aplicar_fabricante_municao(db, dados):
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    if item.nome_comercial != dados["nome_comercial"]:
+        item.codigo = _gerar_codigo_municao(db, dados["nome_comercial"])
+    item.nome_comercial = dados["nome_comercial"]
+    item.calibre = dados["calibre"]
+    item.fabricante_marca = dados["fabricante_marca"]
+    item.fabricante_id = dados.get("fabricante_id")
+    item.quantidade_tipo = dados["quantidade_tipo"]
+    item.quantidade_valor = dados["quantidade_valor"]
+    item.ativo = bool(data.get("ativo", True))
+    db.commit()
+    log_paiol(db, user, request, f"Editou munição {item.nome_comercial} (ID {item_id})")
+    return JSONResponse({"ok": True})
 
 
 # ── Fornecedores ───────────────────────────────────────────

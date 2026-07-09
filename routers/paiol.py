@@ -14,12 +14,24 @@ from models import (
     PaiolLocalizacao,
     PaiolMaterial,
     PaiolMovimentacao,
+    PaiolMunicao,
     PaiolSaldo,
+    PaiolTipoMaterial,
     PaiolUsuarioAutorizado,
     User,
 )
-from paiol_constants import TIPO_MATERIAL_LABELS, TipoMaterialPaiol, TipoMovimentacaoPaiol, TIPO_MOVIMENTO_LABELS
-from services.paiol_helpers import get_user_row
+from paiol_constants import (
+    CATEGORIA_TIPO_MATERIAL_CAMPOS,
+    CATEGORIA_TIPO_MATERIAL_DESCRICOES,
+    CATEGORIA_TIPO_MATERIAL_LABELS,
+    MUNICAO_CAMPOS,
+    MUNICAO_QUANTIDADE_TIPOS,
+    TIPO_MATERIAL_LABELS,
+    TipoMaterialPaiol,
+    TipoMovimentacaoPaiol,
+    TIPO_MOVIMENTO_LABELS,
+)
+from services.paiol_helpers import get_user_row, opcoes_campos_tipo_material
 from services.paiol_service import build_paiol_alerts, build_paiol_dashboard_metrics
 from services.paiol_estoque_service import get_saldo_atual
 from services.paiol_shortcuts import (
@@ -193,14 +205,16 @@ def cadastro_municoes(request: Request, db: Session = Depends(get_db), user: str
     redirect = _auth_or_redirect(user)
     if redirect:
         return redirect
+    municoes = db.query(PaiolMunicao).order_by(PaiolMunicao.nome_comercial).all()
     return templates.TemplateResponse(
-        "paiol/cadastro_materiais.html",
+        "paiol/cadastro_municoes.html",
         {
             "request": request,
             "hide_app_header": True,
-            "materiais": _materiais_por_tipo(db, TipoMaterialPaiol.MUNICAO.value),
-            "titulo": "Munições",
-            "tipo_filtro": TipoMaterialPaiol.MUNICAO.value,
+            "municoes": municoes,
+            "municao_campos": MUNICAO_CAMPOS,
+            "quantidade_tipos": MUNICAO_QUANTIDADE_TIPOS,
+            "opcoes_campos": opcoes_campos_tipo_material(db),
         },
     )
 
@@ -248,6 +262,29 @@ def cadastro_classes(request: Request, db: Session = Depends(get_db), user: str 
     return templates.TemplateResponse(
         "paiol/cadastro_classes.html",
         {"request": request, "hide_app_header": True, "classes": classes},
+    )
+
+
+@router.get("/cadastro/tipos-material")
+def cadastro_tipos_material(request: Request, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    redirect = _auth_or_redirect(user)
+    if redirect:
+        return redirect
+    tipos = db.query(PaiolTipoMaterial).order_by(PaiolTipoMaterial.categoria, PaiolTipoMaterial.especie).all()
+    categoria_labels = {k.value: v for k, v in CATEGORIA_TIPO_MATERIAL_LABELS.items()}
+    categoria_descricoes = {k.value: v for k, v in CATEGORIA_TIPO_MATERIAL_DESCRICOES.items()}
+    return templates.TemplateResponse(
+        "paiol/cadastro_tipos_material.html",
+        {
+            "request": request,
+            "hide_app_header": True,
+            "tipos": tipos,
+            "categoria_labels": categoria_labels,
+            "categoria_descricoes": categoria_descricoes,
+            "categoria_campos": CATEGORIA_TIPO_MATERIAL_CAMPOS,
+            "opcoes_campos": opcoes_campos_tipo_material(db),
+            "quantidade_tipos": MUNICAO_QUANTIDADE_TIPOS,
+        },
     )
 
 
