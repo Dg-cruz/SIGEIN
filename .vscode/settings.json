@@ -1,4 +1,6 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:system",
-    "python-envs.pythonProjects": []
+    "python-envs.pythonProjects": [],
+    "snyk.advanced.organization": "67d452a0-ad58-4b0d-845b-9d6618b2ae7e",
+    "snyk.advanced.autoSelectOrganization": true
 }
