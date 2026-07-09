@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from templating import templates
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware  # ✅ Import no topo
 from middleware import AuthRequiredMiddleware
 from middleware_audit import AuditMiddleware
@@ -40,6 +41,16 @@ app.add_middleware(AuditMiddleware)
 # 3. STATIC FILES
 # ========================================
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# ========================================
+# 3.1 FAVICON (compatível com /favicon.ico)
+# ========================================
+FAVICON_PATH = os.path.join(os.path.dirname(__file__), "static", "favicon.ico")
+
+
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"], include_in_schema=False)
+async def favicon():
+    return FileResponse(FAVICON_PATH, media_type="image/x-icon")
 
 # ========================================
 # 4. TEMPLATES (instância única em templating.py)
