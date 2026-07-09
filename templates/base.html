@@ -415,6 +415,7 @@
                             <a href="/paiol/cadastro/municoes" class="sidebar-nav__link{% if path.startswith('/paiol/cadastro/municoes') %} is-active{% endif %}"><i class="fas fa-bullseye nav-icon"></i><span>Munições</span></a>
                             <a href="/paiol/cadastro/explosivos" class="sidebar-nav__link{% if path.startswith('/paiol/cadastro/explosivos') %} is-active{% endif %}"><i class="fas fa-bomb nav-icon"></i><span>Explosivos</span></a>
                             <a href="/paiol/cadastro/acessorios" class="sidebar-nav__link{% if path.startswith('/paiol/cadastro/acessorios') %} is-active{% endif %}"><i class="fas fa-toolbox nav-icon"></i><span>Acessórios</span></a>
+                            <a href="/paiol/cadastro/tipos-material" class="sidebar-nav__link{% if path.startswith('/paiol/cadastro/tipos-material') %} is-active{% endif %}"><i class="fas fa-tags nav-icon"></i><span>Tipos de materiais</span></a>
                             <a href="/paiol/cadastro/classes" class="sidebar-nav__link{% if path.startswith('/paiol/cadastro/classes') %} is-active{% endif %}"><i class="fas fa-layer-group nav-icon"></i><span>Classes de material</span></a>
                             <a href="/paiol/cadastro/fabricantes" class="sidebar-nav__link{% if path.startswith('/paiol/cadastro/fabricantes') %} is-active{% endif %}"><i class="fas fa-industry nav-icon"></i><span>Fabricantes</span></a>
                             <a href="/paiol/cadastro/fornecedores" class="sidebar-nav__link{% if path.startswith('/paiol/cadastro/fornecedores') %} is-active{% endif %}"><i class="fas fa-truck nav-icon"></i><span>Fornecedores</span></a>
@@ -765,7 +766,7 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{{ url_for('static', path='js/sigen-alerts.js') }}?v=20260630"></script>
+    <script src="{{ url_for('static', path='js/sigen-alerts.js') }}?v=20260709"></script>
     {% if sigen_alert %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {

@@ -2,7 +2,7 @@
 {% include "includes/mod_list_assets.html" with context %}
 {% endmacro %}
 
-{% macro header(title, subtitle='', add_url=none, add_label='Novo', add_icon='fa-plus', show_clear=true, back_url=none, back_label='Voltar') %}
+{% macro header(title, subtitle='', add_url=none, add_label='Novo', add_icon='fa-plus', show_clear=true, back_url=none, back_label='Voltar', add_button_id=none) %}
 <header class="mod-header">
   <div class="mod-header__title">
     <h1>{{ title }}</h1>
@@ -19,7 +19,11 @@
       <i class="fas fa-filter-circle-xmark"></i> Limpar filtros
     </button>
     {% endif %}
-    {% if add_url %}
+    {% if add_button_id %}
+    <button type="button" id="{{ add_button_id }}" class="mod-btn mod-btn--primary">
+      <i class="fas {{ add_icon }}"></i> {{ add_label }}
+    </button>
+    {% elif add_url %}
     <a href="{{ add_url }}" class="mod-btn mod-btn--primary">
       <i class="fas {{ add_icon }}"></i> {{ add_label }}
     </a>
@@ -91,16 +95,22 @@
 </section>
 {% endmacro %}
 
-{% macro actions(edit_url, delete_id=none, view_onclick=none) %}
+{% macro actions(edit_url=none, delete_id=none, view_onclick=none, edit_onclick=none) %}
 <div class="mod-actions">
   {% if view_onclick %}
   <button type="button" class="mod-action-btn mod-action-btn--view" title="Visualizar" onclick="{{ view_onclick }}">
     <i class="fas fa-eye"></i>
   </button>
   {% endif %}
+  {% if edit_onclick %}
+  <button type="button" class="mod-action-btn mod-action-btn--edit" title="Editar" onclick="{{ edit_onclick }}">
+    <i class="fas fa-pen"></i>
+  </button>
+  {% elif edit_url %}
   <a href="{{ edit_url }}" class="mod-action-btn mod-action-btn--edit" title="Editar">
     <i class="fas fa-pen"></i>
   </a>
+  {% endif %}
   {% if delete_id is not none %}
   <form class="delete-form" data-id="{{ delete_id }}" method="post" style="display:inline;">
     <button type="submit" class="mod-action-btn mod-action-btn--delete delete-form-btn" title="Excluir">

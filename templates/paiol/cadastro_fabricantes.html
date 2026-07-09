@@ -33,7 +33,7 @@
       <tr>
         <td><strong>{{ f.nome }}</strong></td>
         <td data-search="{{ f.pais or '' }}">{{ f.pais or '—' }}</td>
-        <td data-search="{{ f.cnpj or '' }}">{{ f.cnpj or '—' }}</td>
+        <td data-search="{{ f.cnpj or '' }}">{{ f.cnpj | format_cnpj if f.cnpj else '—' }}</td>
         <td data-search="{{ 'Ativo' if f.ativo else 'Inativo' }}">{{ mod.status_ativo(f.ativo) }}</td>
         <td>{{ mod.actions("/paiol/cadastro/fabricantes/edit/" ~ f.id) }}</td>
       </tr>

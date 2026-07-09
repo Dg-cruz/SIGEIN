@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, Float, Date, ForeignKey, func, Enum as SQLEnum, Table
+from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, Float, Date, ForeignKey, func, Enum as SQLEnum, Table, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from database import Base
@@ -789,6 +789,38 @@ class PaiolFornecedor(Base):
     contato = Column(String(200))
     ativo = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PaiolTipoMaterial(Base):
+    __tablename__ = "paiol_tipos_material"
+
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(40), unique=True, nullable=False)
+    categoria = Column(String(50), nullable=False)
+    especie = Column(String(200), nullable=False)
+    descricao = Column(Text)
+    detalhes = Column(JSON, nullable=True)
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PaiolMunicao(Base):
+    """Catálogo de munições."""
+    __tablename__ = "paiol_municoes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(40), unique=True, nullable=False)
+    nome_comercial = Column(String(300), nullable=False)
+    calibre = Column(String(80), nullable=False)
+    fabricante_marca = Column(String(200))
+    fabricante_id = Column(Integer, ForeignKey("paiol_fabricantes.id"), nullable=True)
+    quantidade_tipo = Column(String(20))
+    quantidade_valor = Column(Integer)
+    descricao = Column(Text)
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    fabricante = relationship("PaiolFabricante")
 
 
 class PaiolDeposito(Base):

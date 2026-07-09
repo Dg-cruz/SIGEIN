@@ -8,6 +8,8 @@ from paiol_constants import TipoMaterialPaiol
 
 TABLES = [
     "paiol_classes_material",
+    "paiol_tipos_material",
+    "paiol_municoes",
     "paiol_fabricantes",
     "paiol_fornecedores",
     "paiol_depositos",
@@ -16,13 +18,13 @@ TABLES = [
     "paiol_lotes",
     "paiol_itens",
     "paiol_saldos",
-    "paiol_movimentacoes",
     "paiol_usuarios_autorizados",
     "paiol_custodia_eventos",
     "paiol_dashboard_atalhos",
     "paiol_requisicoes",
     "paiol_requisicao_itens",
     "paiol_assinaturas",
+    "paiol_movimentacoes",
 ]
 
 SEED_CLASSES = [
@@ -38,6 +40,59 @@ def create_tables():
         Base.metadata.tables[name].create(bind=engine, checkfirst=True)
     print("Tabelas criadas/verificadas:", ", ".join(TABLES))
     _ensure_movimentacao_requisicao_column()
+    _ensure_tipo_material_detalhes_column()
+    _ensure_municao_columns()
+
+
+def _ensure_municao_columns():
+    """Atualiza tabela paiol_municoes em bancos já existentes."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "paiol_municoes" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("paiol_municoes")}
+    alters = []
+    if "nome_comercial" not in cols:
+        alters.append("ADD COLUMN nome_comercial VARCHAR(300)")
+    if "fabricante_marca" not in cols:
+        alters.append("ADD COLUMN fabricante_marca VARCHAR(200)")
+    if "fabricante_id" not in cols:
+        alters.append("ADD COLUMN fabricante_id INTEGER REFERENCES paiol_fabricantes(id)")
+    if "quantidade_tipo" not in cols:
+        alters.append("ADD COLUMN quantidade_tipo VARCHAR(20)")
+    if "quantidade_valor" not in cols:
+        alters.append("ADD COLUMN quantidade_valor INTEGER")
+    with engine.begin() as conn:
+        for stmt in alters:
+            conn.execute(text(f"ALTER TABLE paiol_municoes {stmt}"))
+        if "nome_comercial" in cols or alters:
+            conn.execute(
+                text(
+                    "UPDATE paiol_municoes SET nome_comercial = COALESCE(nome_comercial, descricao, calibre) "
+                    "WHERE nome_comercial IS NULL OR nome_comercial = ''"
+                )
+            )
+        conn.execute(
+            text("ALTER TABLE paiol_municoes DROP CONSTRAINT IF EXISTS paiol_municoes_calibre_key")
+        )
+    if alters:
+        print("Colunas paiol_municoes atualizadas: OK")
+
+
+def _ensure_tipo_material_detalhes_column():
+    """Adiciona coluna detalhes (JSON) em bancos já existentes."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "paiol_tipos_material" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("paiol_tipos_material")}
+    if "detalhes" in cols:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE paiol_tipos_material ADD COLUMN detalhes JSONB"))
+    print("Coluna paiol_tipos_material.detalhes: OK")
 
 
 def _ensure_movimentacao_requisicao_column():

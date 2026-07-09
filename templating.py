@@ -45,6 +45,20 @@ def format_cpf(value) -> str:
     return f"{digits[:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:]}"
 
 
+def format_cnpj(value) -> str:
+    """Exibe CNPJ como 00.000.000/0000-00 (aceita valor já mascarado ou só dígitos)."""
+    if value is None:
+        return ""
+    digits = re.sub(r"\D", "", str(value))[:14]
+    if len(digits) < 14:
+        return digits
+    return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:]}"
+
+
+def limpar_cnpj(value) -> str:
+    return re.sub(r"\D", "", str(value or ""))[:14]
+
+
 def tempo_recebido(dt):
     """Formata datetime como 'Recebido há X dias/meses/anos'."""
     if not dt:
@@ -175,3 +189,4 @@ templates.env.filters["tempo_recebido"] = tempo_recebido
 templates.env.filters["enum_value"] = enum_value
 templates.env.filters["enum_label"] = enum_label
 templates.env.filters["format_cpf"] = format_cpf
+templates.env.filters["format_cnpj"] = format_cnpj

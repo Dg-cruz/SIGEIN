@@ -75,7 +75,13 @@ window.SIGENAlert = (function () {
   }
 
   function success(message, extra) {
-    return fire("success", message, extra);
+    var callback = null;
+    if (typeof extra === "function") {
+      callback = extra;
+      extra = null;
+    }
+    var promise = fire("success", message, extra);
+    return callback ? promise.then(callback) : promise;
   }
 
   function alertMessage(message, extra) {
@@ -227,7 +233,8 @@ window.SIGENAlert = (function () {
             return error("Não foi possível concluir a operação. Tente novamente.");
           });
         }
-        if (res.redirected) {
+        var destino = safeRedirectPath(res.url);
+        if (res.redirected || (res.ok && destino !== url)) {
           navigateAfterSubmit(res.url);
           return;
         }

@@ -1,0 +1,778 @@
+[
+  {
+    "value": "Afeganistão",
+    "label": "Afeganistão"
+  },
+  {
+    "value": "Albânia",
+    "label": "Albânia"
+  },
+  {
+    "value": "Alemanha",
+    "label": "Alemanha"
+  },
+  {
+    "value": "Andorra",
+    "label": "Andorra"
+  },
+  {
+    "value": "Angola",
+    "label": "Angola"
+  },
+  {
+    "value": "Antígua e Barbuda",
+    "label": "Antígua e Barbuda"
+  },
+  {
+    "value": "Argentina",
+    "label": "Argentina"
+  },
+  {
+    "value": "Argélia",
+    "label": "Argélia"
+  },
+  {
+    "value": "Armênia",
+    "label": "Armênia"
+  },
+  {
+    "value": "Arábia Saudita",
+    "label": "Arábia Saudita"
+  },
+  {
+    "value": "Austrália",
+    "label": "Austrália"
+  },
+  {
+    "value": "Azerbaijão",
+    "label": "Azerbaijão"
+  },
+  {
+    "value": "Bahamas",
+    "label": "Bahamas"
+  },
+  {
+    "value": "Bahrein",
+    "label": "Bahrein"
+  },
+  {
+    "value": "Bangladesh",
+    "label": "Bangladesh"
+  },
+  {
+    "value": "Barbados",
+    "label": "Barbados"
+  },
+  {
+    "value": "Belize",
+    "label": "Belize"
+  },
+  {
+    "value": "Benim",
+    "label": "Benim"
+  },
+  {
+    "value": "Bielorrússia",
+    "label": "Bielorrússia"
+  },
+  {
+    "value": "Bolívia",
+    "label": "Bolívia"
+  },
+  {
+    "value": "Botsuana",
+    "label": "Botsuana"
+  },
+  {
+    "value": "Brasil",
+    "label": "Brasil"
+  },
+  {
+    "value": "Brunei",
+    "label": "Brunei"
+  },
+  {
+    "value": "Bulgária",
+    "label": "Bulgária"
+  },
+  {
+    "value": "Burkina Faso",
+    "label": "Burkina Faso"
+  },
+  {
+    "value": "Burundi",
+    "label": "Burundi"
+  },
+  {
+    "value": "Butão",
+    "label": "Butão"
+  },
+  {
+    "value": "Bélgica",
+    "label": "Bélgica"
+  },
+  {
+    "value": "Bósnia e Herzegovina",
+    "label": "Bósnia e Herzegovina"
+  },
+  {
+    "value": "Cabo Verde",
+    "label": "Cabo Verde"
+  },
+  {
+    "value": "Camarões",
+    "label": "Camarões"
+  },
+  {
+    "value": "Camboja",
+    "label": "Camboja"
+  },
+  {
+    "value": "Canadá",
+    "label": "Canadá"
+  },
+  {
+    "value": "Catar",
+    "label": "Catar"
+  },
+  {
+    "value": "Cazaquistão",
+    "label": "Cazaquistão"
+  },
+  {
+    "value": "Chade",
+    "label": "Chade"
+  },
+  {
+    "value": "Chile",
+    "label": "Chile"
+  },
+  {
+    "value": "China",
+    "label": "China"
+  },
+  {
+    "value": "Chipre",
+    "label": "Chipre"
+  },
+  {
+    "value": "Colômbia",
+    "label": "Colômbia"
+  },
+  {
+    "value": "Comores",
+    "label": "Comores"
+  },
+  {
+    "value": "Congo",
+    "label": "Congo"
+  },
+  {
+    "value": "Coreia do Norte",
+    "label": "Coreia do Norte"
+  },
+  {
+    "value": "Coreia do Sul",
+    "label": "Coreia do Sul"
+  },
+  {
+    "value": "Costa do Marfim",
+    "label": "Costa do Marfim"
+  },
+  {
+    "value": "Costa Rica",
+    "label": "Costa Rica"
+  },
+  {
+    "value": "Croácia",
+    "label": "Croácia"
+  },
+  {
+    "value": "Cuba",
+    "label": "Cuba"
+  },
+  {
+    "value": "Dinamarca",
+    "label": "Dinamarca"
+  },
+  {
+    "value": "Djibuti",
+    "label": "Djibuti"
+  },
+  {
+    "value": "Dominica",
+    "label": "Dominica"
+  },
+  {
+    "value": "Egito",
+    "label": "Egito"
+  },
+  {
+    "value": "El Salvador",
+    "label": "El Salvador"
+  },
+  {
+    "value": "Emirados Árabes Unidos",
+    "label": "Emirados Árabes Unidos"
+  },
+  {
+    "value": "Equador",
+    "label": "Equador"
+  },
+  {
+    "value": "Eritreia",
+    "label": "Eritreia"
+  },
+  {
+    "value": "Eslováquia",
+    "label": "Eslováquia"
+  },
+  {
+    "value": "Eslovênia",
+    "label": "Eslovênia"
+  },
+  {
+    "value": "Espanha",
+    "label": "Espanha"
+  },
+  {
+    "value": "Estados Unidos",
+    "label": "Estados Unidos"
+  },
+  {
+    "value": "Estônia",
+    "label": "Estônia"
+  },
+  {
+    "value": "Eswatini",
+    "label": "Eswatini"
+  },
+  {
+    "value": "Etiópia",
+    "label": "Etiópia"
+  },
+  {
+    "value": "Fiji",
+    "label": "Fiji"
+  },
+  {
+    "value": "Filipinas",
+    "label": "Filipinas"
+  },
+  {
+    "value": "Finlândia",
+    "label": "Finlândia"
+  },
+  {
+    "value": "França",
+    "label": "França"
+  },
+  {
+    "value": "Gabão",
+    "label": "Gabão"
+  },
+  {
+    "value": "Gana",
+    "label": "Gana"
+  },
+  {
+    "value": "Geórgia",
+    "label": "Geórgia"
+  },
+  {
+    "value": "Granada",
+    "label": "Granada"
+  },
+  {
+    "value": "Grécia",
+    "label": "Grécia"
+  },
+  {
+    "value": "Guatemala",
+    "label": "Guatemala"
+  },
+  {
+    "value": "Guiana",
+    "label": "Guiana"
+  },
+  {
+    "value": "Guiné",
+    "label": "Guiné"
+  },
+  {
+    "value": "Guiné Equatorial",
+    "label": "Guiné Equatorial"
+  },
+  {
+    "value": "Guiné-Bissau",
+    "label": "Guiné-Bissau"
+  },
+  {
+    "value": "Gâmbia",
+    "label": "Gâmbia"
+  },
+  {
+    "value": "Haiti",
+    "label": "Haiti"
+  },
+  {
+    "value": "Honduras",
+    "label": "Honduras"
+  },
+  {
+    "value": "Hungria",
+    "label": "Hungria"
+  },
+  {
+    "value": "Ilhas Marshall",
+    "label": "Ilhas Marshall"
+  },
+  {
+    "value": "Ilhas Salomão",
+    "label": "Ilhas Salomão"
+  },
+  {
+    "value": "Indonésia",
+    "label": "Indonésia"
+  },
+  {
+    "value": "Iraque",
+    "label": "Iraque"
+  },
+  {
+    "value": "Irlanda",
+    "label": "Irlanda"
+  },
+  {
+    "value": "Irã",
+    "label": "Irã"
+  },
+  {
+    "value": "Islândia",
+    "label": "Islândia"
+  },
+  {
+    "value": "Israel",
+    "label": "Israel"
+  },
+  {
+    "value": "Itália",
+    "label": "Itália"
+  },
+  {
+    "value": "Iêmen",
+    "label": "Iêmen"
+  },
+  {
+    "value": "Jamaica",
+    "label": "Jamaica"
+  },
+  {
+    "value": "Japão",
+    "label": "Japão"
+  },
+  {
+    "value": "Jordânia",
+    "label": "Jordânia"
+  },
+  {
+    "value": "Kiribati",
+    "label": "Kiribati"
+  },
+  {
+    "value": "Kuwait",
+    "label": "Kuwait"
+  },
+  {
+    "value": "Laos",
+    "label": "Laos"
+  },
+  {
+    "value": "Lesoto",
+    "label": "Lesoto"
+  },
+  {
+    "value": "Letônia",
+    "label": "Letônia"
+  },
+  {
+    "value": "Libéria",
+    "label": "Libéria"
+  },
+  {
+    "value": "Liechtenstein",
+    "label": "Liechtenstein"
+  },
+  {
+    "value": "Lituânia",
+    "label": "Lituânia"
+  },
+  {
+    "value": "Luxemburgo",
+    "label": "Luxemburgo"
+  },
+  {
+    "value": "Líbano",
+    "label": "Líbano"
+  },
+  {
+    "value": "Líbia",
+    "label": "Líbia"
+  },
+  {
+    "value": "Macedônia do Norte",
+    "label": "Macedônia do Norte"
+  },
+  {
+    "value": "Madagascar",
+    "label": "Madagascar"
+  },
+  {
+    "value": "Malawi",
+    "label": "Malawi"
+  },
+  {
+    "value": "Maldivas",
+    "label": "Maldivas"
+  },
+  {
+    "value": "Mali",
+    "label": "Mali"
+  },
+  {
+    "value": "Malta",
+    "label": "Malta"
+  },
+  {
+    "value": "Malásia",
+    "label": "Malásia"
+  },
+  {
+    "value": "Marrocos",
+    "label": "Marrocos"
+  },
+  {
+    "value": "Mauritânia",
+    "label": "Mauritânia"
+  },
+  {
+    "value": "Maurício",
+    "label": "Maurício"
+  },
+  {
+    "value": "Mianmar",
+    "label": "Mianmar"
+  },
+  {
+    "value": "Micronésia",
+    "label": "Micronésia"
+  },
+  {
+    "value": "Moldávia",
+    "label": "Moldávia"
+  },
+  {
+    "value": "Mongólia",
+    "label": "Mongólia"
+  },
+  {
+    "value": "Montenegro",
+    "label": "Montenegro"
+  },
+  {
+    "value": "Moçambique",
+    "label": "Moçambique"
+  },
+  {
+    "value": "México",
+    "label": "México"
+  },
+  {
+    "value": "Mônaco",
+    "label": "Mônaco"
+  },
+  {
+    "value": "Namíbia",
+    "label": "Namíbia"
+  },
+  {
+    "value": "Nauru",
+    "label": "Nauru"
+  },
+  {
+    "value": "Nepal",
+    "label": "Nepal"
+  },
+  {
+    "value": "Nicarágua",
+    "label": "Nicarágua"
+  },
+  {
+    "value": "Nigéria",
+    "label": "Nigéria"
+  },
+  {
+    "value": "Noruega",
+    "label": "Noruega"
+  },
+  {
+    "value": "Nova Zelândia",
+    "label": "Nova Zelândia"
+  },
+  {
+    "value": "Níger",
+    "label": "Níger"
+  },
+  {
+    "value": "Omã",
+    "label": "Omã"
+  },
+  {
+    "value": "Palau",
+    "label": "Palau"
+  },
+  {
+    "value": "Panamá",
+    "label": "Panamá"
+  },
+  {
+    "value": "Papua-Nova Guiné",
+    "label": "Papua-Nova Guiné"
+  },
+  {
+    "value": "Paquistão",
+    "label": "Paquistão"
+  },
+  {
+    "value": "Paraguai",
+    "label": "Paraguai"
+  },
+  {
+    "value": "Países Baixos",
+    "label": "Países Baixos"
+  },
+  {
+    "value": "Peru",
+    "label": "Peru"
+  },
+  {
+    "value": "Polônia",
+    "label": "Polônia"
+  },
+  {
+    "value": "Portugal",
+    "label": "Portugal"
+  },
+  {
+    "value": "Quirguistão",
+    "label": "Quirguistão"
+  },
+  {
+    "value": "Quênia",
+    "label": "Quênia"
+  },
+  {
+    "value": "Reino Unido",
+    "label": "Reino Unido"
+  },
+  {
+    "value": "República Centro-Africana",
+    "label": "República Centro-Africana"
+  },
+  {
+    "value": "República Democrática do Congo",
+    "label": "República Democrática do Congo"
+  },
+  {
+    "value": "República Dominicana",
+    "label": "República Dominicana"
+  },
+  {
+    "value": "República Tcheca",
+    "label": "República Tcheca"
+  },
+  {
+    "value": "Romênia",
+    "label": "Romênia"
+  },
+  {
+    "value": "Ruanda",
+    "label": "Ruanda"
+  },
+  {
+    "value": "Rússia",
+    "label": "Rússia"
+  },
+  {
+    "value": "Samoa",
+    "label": "Samoa"
+  },
+  {
+    "value": "San Marino",
+    "label": "San Marino"
+  },
+  {
+    "value": "Santa Lúcia",
+    "label": "Santa Lúcia"
+  },
+  {
+    "value": "Seicheles",
+    "label": "Seicheles"
+  },
+  {
+    "value": "Senegal",
+    "label": "Senegal"
+  },
+  {
+    "value": "Serra Leoa",
+    "label": "Serra Leoa"
+  },
+  {
+    "value": "Singapura",
+    "label": "Singapura"
+  },
+  {
+    "value": "Somália",
+    "label": "Somália"
+  },
+  {
+    "value": "Sri Lanka",
+    "label": "Sri Lanka"
+  },
+  {
+    "value": "Sudão",
+    "label": "Sudão"
+  },
+  {
+    "value": "Sudão do Sul",
+    "label": "Sudão do Sul"
+  },
+  {
+    "value": "Suriname",
+    "label": "Suriname"
+  },
+  {
+    "value": "Suécia",
+    "label": "Suécia"
+  },
+  {
+    "value": "Suíça",
+    "label": "Suíça"
+  },
+  {
+    "value": "São Cristóvão e Névis",
+    "label": "São Cristóvão e Névis"
+  },
+  {
+    "value": "São Tomé e Príncipe",
+    "label": "São Tomé e Príncipe"
+  },
+  {
+    "value": "São Vicente e Granadinas",
+    "label": "São Vicente e Granadinas"
+  },
+  {
+    "value": "Sérvia",
+    "label": "Sérvia"
+  },
+  {
+    "value": "Síria",
+    "label": "Síria"
+  },
+  {
+    "value": "Tailândia",
+    "label": "Tailândia"
+  },
+  {
+    "value": "Tajiquistão",
+    "label": "Tajiquistão"
+  },
+  {
+    "value": "Tanzânia",
+    "label": "Tanzânia"
+  },
+  {
+    "value": "Timor-Leste",
+    "label": "Timor-Leste"
+  },
+  {
+    "value": "Togo",
+    "label": "Togo"
+  },
+  {
+    "value": "Tonga",
+    "label": "Tonga"
+  },
+  {
+    "value": "Trinidad e Tobago",
+    "label": "Trinidad e Tobago"
+  },
+  {
+    "value": "Tunísia",
+    "label": "Tunísia"
+  },
+  {
+    "value": "Turcomenistão",
+    "label": "Turcomenistão"
+  },
+  {
+    "value": "Turquia",
+    "label": "Turquia"
+  },
+  {
+    "value": "Tuvalu",
+    "label": "Tuvalu"
+  },
+  {
+    "value": "Ucrânia",
+    "label": "Ucrânia"
+  },
+  {
+    "value": "Uganda",
+    "label": "Uganda"
+  },
+  {
+    "value": "Uruguai",
+    "label": "Uruguai"
+  },
+  {
+    "value": "Uzbequistão",
+    "label": "Uzbequistão"
+  },
+  {
+    "value": "Vanuatu",
+    "label": "Vanuatu"
+  },
+  {
+    "value": "Vaticano",
+    "label": "Vaticano"
+  },
+  {
+    "value": "Venezuela",
+    "label": "Venezuela"
+  },
+  {
+    "value": "Vietnã",
+    "label": "Vietnã"
+  },
+  {
+    "value": "Zimbábue",
+    "label": "Zimbábue"
+  },
+  {
+    "value": "Zâmbia",
+    "label": "Zâmbia"
+  },
+  {
+    "value": "África do Sul",
+    "label": "África do Sul"
+  },
+  {
+    "value": "Áustria",
+    "label": "Áustria"
+  },
+  {
+    "value": "Índia",
+    "label": "Índia"
+  }
+]
