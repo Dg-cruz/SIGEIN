@@ -128,17 +128,44 @@ window.SIGENModList = (function () {
     });
   }
 
+  function applyCellTitles(api) {
+    $(api.table().body())
+      .find("td")
+      .each(function () {
+        var cell = this;
+        if (cell.classList.contains("mod-col-actions")) {
+          cell.removeAttribute("title");
+          return;
+        }
+        if (cell.scrollWidth > cell.clientWidth) {
+          var text =
+            $(cell).attr("data-search") || $(cell).text().replace(/\s+/g, " ").trim();
+          if (text) {
+            cell.setAttribute("title", text);
+            return;
+          }
+        }
+        cell.removeAttribute("title");
+      });
+  }
+
   function initTable(selector, options) {
     var opts = options || {};
     var $t = $(selector);
     if (!$t.length) return null;
+    var userDrawCallback = opts.drawCallback;
     var dtOpts = {
       order: opts.order || [[0, "asc"]],
       columnDefs: opts.columnDefs || [],
       language: dtLang,
       pageLength: opts.pageLength || 10,
       dom: opts.dom || 'rt<"bottom"lip><"clear">',
-      drawCallback: opts.drawCallback,
+      drawCallback: function () {
+        applyCellTitles(this.api());
+        if (typeof userDrawCallback === "function") {
+          userDrawCallback.apply(this, arguments);
+        }
+      },
     };
     if (opts.ajax) dtOpts.ajax = opts.ajax;
     if (opts.columns) dtOpts.columns = opts.columns;
