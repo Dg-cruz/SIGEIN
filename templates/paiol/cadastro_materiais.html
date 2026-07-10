@@ -32,7 +32,7 @@
   <table id="paiolMateriaisTable" class="display mod-table--layout-cols" style="width:100%;">
     <thead>
       <tr>
-        <th class="mod-col-status">Código</th>
+        <th class="mod-col-code">Código</th>
         <th class="mod-col-main">Nome</th>
         {% if not tipo_filtro %}<th>Tipo</th>{% endif %}
         <th>Classe</th>
@@ -67,7 +67,7 @@
 
 {% if not tipo_filtro %}
 {% set col_defs = [
-  {"targets": 0, "width": "7.5rem", "className": "mod-col-status"},
+  {"targets": 0, "width": "10rem", "className": "mod-col-code"},
   {"targets": 1, "className": "mod-col-main"},
   {"targets": 6, "width": "7.5rem", "className": "mod-col-status"},
   {"orderable": false, "targets": 7, "width": "5.75rem", "className": "mod-col-actions"}
@@ -80,7 +80,7 @@
 ] %}
 {% else %}
 {% set col_defs = [
-  {"targets": 0, "width": "7.5rem", "className": "mod-col-status"},
+  {"targets": 0, "width": "10rem", "className": "mod-col-code"},
   {"targets": 1, "className": "mod-col-main"},
   {"targets": 5, "width": "7.5rem", "className": "mod-col-status"},
   {"orderable": false, "targets": 6, "width": "5.75rem", "className": "mod-col-actions"}
