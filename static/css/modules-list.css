@@ -548,14 +548,32 @@
   width: 100% !important;
 }
 
+/* Evita sobreposição de conteúdo entre colunas */
+.mod-page table.dataTable.mod-table--layout-cols thead th,
+.mod-page table.dataTable.mod-table--layout-cols tbody td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mod-page table.dataTable th.mod-col-main,
 .mod-page table.dataTable td.mod-col-main {
   width: auto !important;
+  max-width: 0;
 }
 
 .mod-page table.dataTable th.mod-col-desc,
 .mod-page table.dataTable td.mod-col-desc {
   width: 35% !important;
+  max-width: 35%;
+}
+
+.mod-page table.dataTable th.mod-col-code,
+.mod-page table.dataTable td.mod-col-code {
+  width: 10rem !important;
+  min-width: 10rem !important;
+  max-width: 10rem !important;
+  white-space: nowrap;
 }
 
 .mod-page table.dataTable th.mod-col-status,
@@ -574,8 +592,16 @@
   max-width: 5.75rem !important;
   text-align: center !important;
   white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
+}
+
+/* Colunas sem classe explícita compartilham o espaço restante */
+.mod-page table.dataTable.mod-table--layout-cols tbody td:not([class*="mod-col-"]),
+.mod-page table.dataTable.mod-table--layout-cols thead th:not([class*="mod-col-"]) {
+  max-width: 0;
 }
 
 .mod-page table.dataTable td.mod-col-actions .mod-actions {
