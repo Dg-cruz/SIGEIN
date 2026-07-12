@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Request, Form, Depends, Query
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse, FileResponse
 from starlette.status import HTTP_302_FOUND
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from database import get_db
@@ -26,6 +26,49 @@ from services.product_attachment_service import (
 from datetime import datetime
 
 router = APIRouter(prefix="/products", tags=["Products"])
+
+STATUS_PADRAO = ("Disponível", "Em Uso", "Manutenção", "Bloqueado")
+STATUS_EM_REPARO = ("Manutenção", "Manutenção Simples", "Manutenção Composta")
+
+
+def _estado_em_reparo_id(db: Session) -> int | None:
+    st = (
+        db.query(EquipmentState)
+        .filter(func.lower(EquipmentState.nome) == "em reparo")
+        .first()
+    )
+    return st.id if st else None
+
+
+def _validar_status_em_reparo(
+    estado_id: int | None,
+    status: str | None,
+    em_reparo_id: int | None,
+) -> str | None:
+    if not em_reparo_id or estado_id != em_reparo_id:
+        return None
+    if (status or "").strip() not in STATUS_EM_REPARO:
+        return (
+            'Quando o estado for "Em Reparo", selecione o status '
+            "Manutenção, Manutenção Simples ou Manutenção Composta."
+        )
+    return None
+
+
+def _observacao_item_serie(
+    estado_id: int | None,
+    status: str | None,
+    detalhes: str | None,
+    observacao_geral: str | None,
+    em_reparo_id: int | None,
+) -> str | None:
+    """Detalhes de manutenção por item quando Em Reparo; senão usa observação geral."""
+    status_ok = (status or "").strip()
+    if em_reparo_id and estado_id == em_reparo_id and status_ok in STATUS_EM_REPARO:
+        det = (detalhes or "").strip()
+        return det or None
+    geral = (observacao_geral or "").strip()
+    return geral or None
 
 
 def _user_obj(db: Session, user: str):
@@ -372,6 +415,7 @@ def add_product_form(request: Request, db: Session = Depends(get_db), user: str 
     categorias = db.query(Category).order_by(Category.nome).all()
     tipos = db.query(EquipmentType).all()
     estados = db.query(EquipmentState).all()  # estado físico do item (equipment_states)
+    em_reparo_id = _estado_em_reparo_id(db)
 
     return templates.TemplateResponse(
         "product_form.html",
@@ -381,6 +425,7 @@ def add_product_form(request: Request, db: Session = Depends(get_db), user: str 
             "categories": categorias,
             "tipos": tipos,
             "estados": estados,
+            "estado_em_reparo_id": em_reparo_id,
             "units": units,
             "lotacao": lotacao,
             "is_master": is_master,
@@ -527,6 +572,7 @@ async def add_product(
     tipo_numero = form_data.getlist("tipo_numero[]") or form_data.getlist("tipo_numero")
     estado_id_list = form_data.getlist("estado_id[]")
     status_list = form_data.getlist("status[]")
+    detalhes_list = form_data.getlist("detalhes_manutencao[]")
 
     category_id = _parse_int(form_data.get("category_id"))
     type_id = _parse_int(form_data.get("type_id")) or 0
@@ -585,6 +631,8 @@ async def add_product(
         if err_num:
             return alert_back(request, err_num)
 
+    em_reparo_id = _estado_em_reparo_id(db)
+
     product = Product(
         name=name,
         category_id=category_id,
@@ -630,6 +678,13 @@ async def add_product(
                 )
             estado_i = _parse_int(estado_id_list[i]) if i < len(estado_id_list) else estado_id
             status_i = (status_list[i] or "Disponível") if i < len(status_list) else status
+            detalhes_i = detalhes_list[i] if i < len(detalhes_list) else None
+            err_st = _validar_status_em_reparo(estado_i, status_i, em_reparo_id)
+            if err_st:
+                return alert_back(request, err_st)
+            obs_i = _observacao_item_serie(
+                estado_i, status_i, detalhes_i, observacao, em_reparo_id
+            )
             item = Item(
                 product_id=product.id,
                 municipio_id=municipio_id,
@@ -642,7 +697,7 @@ async def add_product(
                 data_aquisicao=data_aq,
                 valor_aquisicao=valor_aquisicao,
                 garantia_ate=garantia_dt,
-                observacao=observacao,
+                observacao=obs_i,
             )
             db.add(item)
             items_criados.append(item)
@@ -765,6 +820,7 @@ def edit_product_form(product_id: int, request: Request, db: Session = Depends(g
     categorias = db.query(Category).order_by(Category.nome).all()
     tipos = db.query(EquipmentType).all()
     estados = db.query(EquipmentState).all()
+    em_reparo_id = _estado_em_reparo_id(db)
 
     attachments = sorted(product.attachments or [], key=lambda a: a.created_at or datetime.min, reverse=True)
 
@@ -776,6 +832,7 @@ def edit_product_form(product_id: int, request: Request, db: Session = Depends(g
             "categories": categorias,
             "tipos": tipos,
             "estados": estados,
+            "estado_em_reparo_id": em_reparo_id,
             "units": units,
             "lotacao": lotacao,
             "is_master": is_master,
@@ -881,6 +938,8 @@ async def edit_product(
         item_id_list = form_data.getlist("item_id[]") or form_data.getlist("item_id")
         estado_id_list = form_data.getlist("estado_id[]")
         status_list = form_data.getlist("status[]")
+        detalhes_list = form_data.getlist("detalhes_manutencao[]")
+        em_reparo_id = _estado_em_reparo_id(db)
 
         if not unit_id_int:
             return alert_back(request, "Selecione a Unidade antes de salvar.")
@@ -901,12 +960,17 @@ async def edit_product(
                 item_id = None
             estado_idx = _parse_int(estado_id_list[idx]) if idx < len(estado_id_list) else estado_int
             status_idx = (status_list[idx] or "Disponível") if idx < len(status_list) else status_val
+            detalhes_idx = detalhes_list[idx] if idx < len(detalhes_list) else None
+            err_st = _validar_status_em_reparo(estado_idx, status_idx, em_reparo_id)
+            if err_st:
+                return alert_back(request, err_st)
             linhas.append({
                 "item_id": item_id,
                 "is_tombo": is_tombo,
                 "num_str": num_str,
                 "estado_id": estado_idx,
                 "status": status_idx,
+                "detalhes": detalhes_idx,
             })
 
         pares = [(linha["is_tombo"], linha["num_str"]) for linha in linhas]
@@ -945,6 +1009,13 @@ async def edit_product(
                     request,
                     "Número do tombo inválido. Use o formato 000.000 (6 dígitos).",
                 )
+            obs_i = _observacao_item_serie(
+                linha["estado_id"],
+                linha["status"],
+                linha["detalhes"],
+                observacao,
+                em_reparo_id,
+            )
             if linha["item_id"]:
                 it = existing_by_id[linha["item_id"]]
                 it.tombo = linha["is_tombo"]
@@ -957,7 +1028,7 @@ async def edit_product(
                 it.data_aquisicao = data_aq
                 it.valor_aquisicao = valor_float
                 it.garantia_ate = garantia_dt
-                it.observacao = observacao or None
+                it.observacao = obs_i
                 db.add(it)
             else:
                 db.add(
@@ -973,7 +1044,7 @@ async def edit_product(
                         data_aquisicao=data_aq,
                         valor_aquisicao=valor_float,
                         garantia_ate=garantia_dt,
-                        observacao=observacao or None,
+                        observacao=obs_i,
                     )
                 )
 

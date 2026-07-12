@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from database import get_db
 from dependencies import get_current_user, registrar_log
-from models import Brand, Category, EquipmentType
+from models import Brand, Category, EquipmentType, Product
 from templating import templates
 from ui_alerts import alert_back
 
@@ -245,11 +245,29 @@ def delete_brand(
     if not user:
         return RedirectResponse("/login")
 
-    ip = request.client.host
     marca = db.query(Brand).filter(Brand.id == brand_id).first()
-    if marca:
+    if not marca:
+        return RedirectResponse("/brands")
+
+    tem_produto = db.query(Product.id).filter(Product.brand_id == brand_id).first()
+    if tem_produto:
+        return alert_back(
+            request,
+            f'Não é possível excluir a marca "{marca.nome}": há produtos vinculados. '
+            "Edite ou remova os produtos antes de excluir a marca.",
+        )
+
+    ip = request.client.host
+    nome = marca.nome
+    try:
         db.delete(marca)
         db.commit()
-        registrar_log(db, usuario=user, acao=f"Excluiu marca ID {brand_id}", ip=ip)
+    except IntegrityError:
+        db.rollback()
+        return alert_back(
+            request,
+            f'Não é possível excluir a marca "{nome}": ainda possui vínculos no sistema.',
+        )
 
+    registrar_log(db, usuario=user, acao=f"Excluiu marca ID {brand_id} ({nome})", ip=ip)
     return RedirectResponse("/brands", status_code=HTTP_302_FOUND)
