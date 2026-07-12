@@ -257,20 +257,28 @@
                         </div>
                         <div class="form-group" style="flex: 0 0 130px;">
                             <label>Estado (físico)</label>
-                            <select name="estado_id[]">
+                            <select name="estado_id[]" class="estado-item">
                                 <option value="">-- Selecione --</option>
                                 {% for estado in estados %}
                                 <option value="{{ estado.id }}" {% if it.estado_id == estado.id %}selected{% endif %}>{{ estado.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="form-group" style="flex: 0 0 120px;">
+                        <div class="form-group" style="flex: 0 0 150px;">
                             <label>Status</label>
-                            <select name="status[]">
-                                <option value="Disponível" {% if it.status == 'Disponível' %}selected{% endif %}>Disponível</option>
-                                <option value="Em Uso" {% if it.status == 'Em Uso' %}selected{% endif %}>Em Uso</option>
-                                <option value="Manutenção" {% if it.status == 'Manutenção' %}selected{% endif %}>Manutenção</option>
-                                <option value="Bloqueado" {% if it.status == 'Bloqueado' %}selected{% endif %}>Bloqueado</option>
+                            <select name="status[]" class="status-item">
+                                {% set st = it.status or 'Disponível' %}
+                                {% set em_reparo = estado_em_reparo_id and it.estado_id == estado_em_reparo_id %}
+                                {% if em_reparo %}
+                                <option value="Manutenção" {% if st == 'Manutenção' %}selected{% endif %}>Manutenção</option>
+                                <option value="Manutenção Simples" {% if st == 'Manutenção Simples' %}selected{% endif %}>Manutenção Simples</option>
+                                <option value="Manutenção Composta" {% if st == 'Manutenção Composta' %}selected{% endif %}>Manutenção Composta</option>
+                                {% else %}
+                                <option value="Disponível" {% if st == 'Disponível' %}selected{% endif %}>Disponível</option>
+                                <option value="Em Uso" {% if st == 'Em Uso' %}selected{% endif %}>Em Uso</option>
+                                <option value="Manutenção" {% if st == 'Manutenção' %}selected{% endif %}>Manutenção</option>
+                                <option value="Bloqueado" {% if st == 'Bloqueado' %}selected{% endif %}>Bloqueado</option>
+                                {% endif %}
                             </select>
                         </div>
                         <div class="form-group" style="flex: 0 0 50px; align-self: flex-end;">
@@ -278,6 +286,11 @@
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
+                    </div>
+                    {% set show_det = em_reparo and st in ['Manutenção', 'Manutenção Simples', 'Manutenção Composta'] %}
+                    <div class="form-group detalhes-manutencao-wrap" style="{% if not show_det %}display:none;{% endif %} margin-top:0.35rem;">
+                        <label>Detalhes</label>
+                        <textarea name="detalhes_manutencao[]" class="detalhes-manutencao" rows="2" placeholder="Detalhes da manutenção (opcional)">{{ it.observacao if show_det and it.observacao else '' }}</textarea>
                     </div>
                 </div>
                     {% endfor %}
@@ -299,16 +312,16 @@
                         </div>
                         <div class="form-group" style="flex: 0 0 130px;">
                             <label>Estado (físico)</label>
-                            <select name="estado_id[]">
+                            <select name="estado_id[]" class="estado-item">
                                 <option value="">-- Selecione --</option>
                                 {% for estado in estados %}
                                 <option value="{{ estado.id }}">{{ estado.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="form-group" style="flex: 0 0 120px;">
+                        <div class="form-group" style="flex: 0 0 150px;">
                             <label>Status</label>
-                            <select name="status[]">
+                            <select name="status[]" class="status-item">
                                 <option value="Disponível" selected>Disponível</option>
                                 <option value="Em Uso">Em Uso</option>
                                 <option value="Manutenção">Manutenção</option>
@@ -320,6 +333,10 @@
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
+                    </div>
+                    <div class="form-group detalhes-manutencao-wrap" style="display:none; margin-top:0.35rem;">
+                        <label>Detalhes</label>
+                        <textarea name="detalhes_manutencao[]" class="detalhes-manutencao" rows="2" placeholder="Detalhes da manutenção (opcional)"></textarea>
                     </div>
                 </div>
                 {% endif %}
@@ -600,6 +617,7 @@ legend {
 
 <span id="numero-index"
       data-numero="{% if action == 'edit' and product_items %}{{ product_items|length }}{% else %}1{% endif %}"
+      data-estado-em-reparo="{{ estado_em_reparo_id or '' }}"
       style="display:none;">
 </span>
 
@@ -608,6 +626,20 @@ let numeroIndex = parseInt(
     document.getElementById('numero-index').dataset.numero,
     10
 );
+const ESTADO_EM_REPARO_ID = String(
+    document.getElementById('numero-index').dataset.estadoEmReparo || ''
+);
+const STATUS_PADRAO = [
+    { value: 'Disponível', label: 'Disponível' },
+    { value: 'Em Uso', label: 'Em Uso' },
+    { value: 'Manutenção', label: 'Manutenção' },
+    { value: 'Bloqueado', label: 'Bloqueado' },
+];
+const STATUS_EM_REPARO = [
+    { value: 'Manutenção', label: 'Manutenção' },
+    { value: 'Manutenção Simples', label: 'Manutenção Simples' },
+    { value: 'Manutenção Composta', label: 'Manutenção Composta' },
+];
 
 function toggleControles() {
     const controlaSerie = document.getElementById('controla_por_serie').checked;
@@ -619,11 +651,11 @@ function toggleControles() {
     secaoComSerie.style.display = controlaSerie ? 'block' : 'none';
 
     // 🔥 DESABILITA CAMPOS DA SEÇÃO OCULTA
-    secaoSemSerie.querySelectorAll('select, input').forEach(el => {
+    secaoSemSerie.querySelectorAll('select, input, textarea').forEach(el => {
         el.disabled = controlaSerie;
     });
 
-    secaoComSerie.querySelectorAll('select, input').forEach(el => {
+    secaoComSerie.querySelectorAll('select, input, textarea').forEach(el => {
         el.disabled = !controlaSerie;
     });
 }
@@ -674,9 +706,67 @@ function toggleCampoNumero(select) {
     }
 }
 
+function fillStatusOptions(select, options, preferredValue) {
+    const current = preferredValue != null ? preferredValue : select.value;
+    select.innerHTML = options.map(function (opt) {
+        return '<option value="' + opt.value + '">' + opt.label + '</option>';
+    }).join('');
+    const exists = options.some(function (opt) { return opt.value === current; });
+    select.value = exists ? current : options[0].value;
+}
+
+function syncItemEstadoStatus(item) {
+    const estadoSelect = item.querySelector('.estado-item');
+    const statusSelect = item.querySelector('.status-item');
+    const wrap = item.querySelector('.detalhes-manutencao-wrap');
+    const detalhes = item.querySelector('.detalhes-manutencao');
+    if (!estadoSelect || !statusSelect) return;
+
+    const emReparo = ESTADO_EM_REPARO_ID && String(estadoSelect.value) === ESTADO_EM_REPARO_ID;
+    const prevStatus = statusSelect.value;
+    let preferred = prevStatus;
+    if (emReparo) {
+        if (!STATUS_EM_REPARO.some(function (s) { return s.value === prevStatus; })) {
+            preferred = 'Manutenção';
+        }
+    } else if (!STATUS_PADRAO.some(function (s) { return s.value === prevStatus; })) {
+        preferred = 'Disponível';
+    }
+    fillStatusOptions(
+        statusSelect,
+        emReparo ? STATUS_EM_REPARO : STATUS_PADRAO,
+        preferred
+    );
+
+    const status = statusSelect.value;
+    const showDetalhes = emReparo && STATUS_EM_REPARO.some(function (s) { return s.value === status; });
+    if (wrap) {
+        wrap.style.display = showDetalhes ? '' : 'none';
+    }
+    if (detalhes && !showDetalhes) {
+        detalhes.value = '';
+    }
+}
+
 function initNumeroItem(item) {
     const select = item.querySelector('.tipo-numero');
     if (select) toggleCampoNumero(select);
+
+    const estadoSelect = item.querySelector('.estado-item');
+    const statusSelect = item.querySelector('.status-item');
+    if (estadoSelect && !estadoSelect.dataset.reparoBound) {
+        estadoSelect.dataset.reparoBound = '1';
+        estadoSelect.addEventListener('change', function () {
+            syncItemEstadoStatus(item);
+        });
+    }
+    if (statusSelect && !statusSelect.dataset.reparoBound) {
+        statusSelect.dataset.reparoBound = '1';
+        statusSelect.addEventListener('change', function () {
+            syncItemEstadoStatus(item);
+        });
+    }
+    syncItemEstadoStatus(item);
 }
 
 function validarNumerosFormulario() {
@@ -741,11 +831,11 @@ function adicionarNumero() {
             </div>
             <div class="form-group" style="flex: 0 0 130px;">
                 <label>Estado (físico)</label>
-                <select name="estado_id[]">${estadoOpts}</select>
+                <select name="estado_id[]" class="estado-item">${estadoOpts}</select>
             </div>
-            <div class="form-group" style="flex: 0 0 120px;">
+            <div class="form-group" style="flex: 0 0 150px;">
                 <label>Status</label>
-                <select name="status[]">
+                <select name="status[]" class="status-item">
                     <option value="Disponível" selected>Disponível</option>
                     <option value="Em Uso">Em Uso</option>
                     <option value="Manutenção">Manutenção</option>
@@ -757,6 +847,10 @@ function adicionarNumero() {
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
+        </div>
+        <div class="form-group detalhes-manutencao-wrap" style="display:none; margin-top:0.35rem;">
+            <label>Detalhes</label>
+            <textarea name="detalhes_manutencao[]" class="detalhes-manutencao" rows="2" placeholder="Detalhes da manutenção (opcional)"></textarea>
         </div>
     `;
     
