@@ -878,6 +878,7 @@ async def edit_product(
     if controla_por_serie:
         numeros = form_data.getlist("numero[]") or form_data.getlist("numero")
         tipo_numeros = form_data.getlist("tipo_numero[]") or form_data.getlist("tipo_numero")
+        item_id_list = form_data.getlist("item_id[]") or form_data.getlist("item_id")
         estado_id_list = form_data.getlist("estado_id[]")
         status_list = form_data.getlist("status[]")
 
@@ -885,62 +886,108 @@ async def edit_product(
             return alert_back(request, "Selecione a Unidade antes de salvar.")
 
         existing_items = db.query(Item).filter(Item.product_id == product.id).order_by(Item.id).all()
-        pares = _coletar_pares_numero(numeros, tipo_numeros)
+        existing_by_id = {it.id: it for it in existing_items}
+
+        # Mantém alinhamento por índice do formulário (inclui item_id da linha removida/mantida)
+        linhas = []
+        for idx, num in enumerate(numeros):
+            num_str = (num if isinstance(num, str) else str(num or "")).strip()
+            if not num_str:
+                continue
+            tipo_val = tipo_numeros[idx] if idx < len(tipo_numeros) else "tombo"
+            is_tombo = str(tipo_val).lower() == "tombo"
+            item_id = _parse_int(item_id_list[idx]) if idx < len(item_id_list) else None
+            if item_id and item_id not in existing_by_id:
+                item_id = None
+            estado_idx = _parse_int(estado_id_list[idx]) if idx < len(estado_id_list) else estado_int
+            status_idx = (status_list[idx] or "Disponível") if idx < len(status_list) else status_val
+            linhas.append({
+                "item_id": item_id,
+                "is_tombo": is_tombo,
+                "num_str": num_str,
+                "estado_id": estado_idx,
+                "status": status_idx,
+            })
+
+        pares = [(linha["is_tombo"], linha["num_str"]) for linha in linhas]
         if not pares:
             return alert_back(request, "Informe ao menos um número de tombo ou de série.")
         err_num = _validar_numeros_itens(db, pares, product_id=product.id)
         if err_num:
             return alert_back(request, err_num)
 
-        # Primeiro libera num_tombo_ou_serie nos itens existentes (evita UniqueViolation ao trocar ordem)
-        for idx in range(min(len(pares), len(existing_items))):
-            existing_items[idx].num_tombo_ou_serie = None
+        kept_ids = {linha["item_id"] for linha in linhas if linha["item_id"]}
+        items_to_delete = [it for it in existing_items if it.id not in kept_ids]
+        if items_to_delete:
+            del_ids = [it.id for it in items_to_delete]
+            tem_mov = (
+                db.query(Movement.id)
+                .filter(Movement.item_id.in_(del_ids))
+                .first()
+            )
+            if tem_mov:
+                return alert_back(
+                    request,
+                    "Não é possível remover item(ns) do grupo: há movimentação vinculada. "
+                    "Exclua ou ajuste as movimentações antes de remover.",
+                )
+
+        # Libera números antes de reatribuir/excluir (evita UniqueViolation)
+        for it in existing_items:
+            it.num_tombo_ou_serie = None
         db.flush()
 
-        for idx, (is_tombo, num_str) in enumerate(pares):
-            num_norm = _normalize_numero_item(is_tombo, num_str)
+        for linha in linhas:
+            num_norm = _normalize_numero_item(linha["is_tombo"], linha["num_str"])
             if not num_norm:
-                return alert_back(request,
-                    "Número do tombo inválido. Use o formato 000.000 (6 dígitos)."
+                db.rollback()
+                return alert_back(
+                    request,
+                    "Número do tombo inválido. Use o formato 000.000 (6 dígitos).",
                 )
-            estado_idx = _parse_int(estado_id_list[idx]) if idx < len(estado_id_list) else estado_int
-            status_idx = (status_list[idx] or "Disponível") if idx < len(status_list) else status_val
-            if idx < len(existing_items):
-                it = existing_items[idx]
-                it.tombo = is_tombo
+            if linha["item_id"]:
+                it = existing_by_id[linha["item_id"]]
+                it.tombo = linha["is_tombo"]
                 it.num_tombo_ou_serie = num_norm
                 it.unit_id = unit_id_int
                 it.municipio_id = product.municipio_id
                 it.orgao_id = product.orgao_id
-                it.estado_id = estado_idx
-                it.status = status_idx
+                it.estado_id = linha["estado_id"]
+                it.status = linha["status"]
                 it.data_aquisicao = data_aq
                 it.valor_aquisicao = valor_float
                 it.garantia_ate = garantia_dt
                 it.observacao = observacao or None
                 db.add(it)
             else:
-                novo = Item(
-                    product_id=product.id,
-                    municipio_id=product.municipio_id,
-                    orgao_id=product.orgao_id,
-                    unit_id=unit_id_int,
-                    tombo=is_tombo,
-                    num_tombo_ou_serie=num_norm,
-                    estado_id=estado_idx,
-                    status=status_idx,
-                    data_aquisicao=data_aq,
-                    valor_aquisicao=valor_float,
-                    garantia_ate=garantia_dt,
-                    observacao=observacao or None,
+                db.add(
+                    Item(
+                        product_id=product.id,
+                        municipio_id=product.municipio_id,
+                        orgao_id=product.orgao_id,
+                        unit_id=unit_id_int,
+                        tombo=linha["is_tombo"],
+                        num_tombo_ou_serie=num_norm,
+                        estado_id=linha["estado_id"],
+                        status=linha["status"],
+                        data_aquisicao=data_aq,
+                        valor_aquisicao=valor_float,
+                        garantia_ate=garantia_dt,
+                        observacao=observacao or None,
+                    )
                 )
-                db.add(novo)
 
-        if len(pares) < len(existing_items):
-            for it in existing_items[len(pares):]:
-                db.delete(it)
+        for it in items_to_delete:
+            db.delete(it)
 
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return alert_back(
+                request,
+                "Não foi possível salvar: um ou mais itens ainda possuem vínculos no sistema.",
+            )
     else:
         item = db.query(Item).filter(Item.product_id == product.id).first()
         if not item:

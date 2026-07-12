@@ -242,6 +242,7 @@
                 {% if action == 'edit' and product_items %}
                     {% for it in product_items %}
                 <div class="numero-item" data-index="{{ loop.index0 }}">
+                    <input type="hidden" name="item_id[]" value="{{ it.id }}">
                     <div class="form-row flex-wrap">
                         <div class="form-group" style="flex: 0 0 120px;">
                             <label>Tipo*</label>
@@ -283,6 +284,7 @@
                 {% else %}
                 <!-- Primeiro item (cadastro novo) -->
                 <div class="numero-item" data-index="0">
+                    <input type="hidden" name="item_id[]" value="">
                     <div class="form-row flex-wrap">
                         <div class="form-group" style="flex: 0 0 120px;">
                             <label>Tipo*</label>
@@ -724,6 +726,7 @@ function adicionarNumero() {
     novoItem.dataset.index = numeroIndex;
     
     novoItem.innerHTML = `
+        <input type="hidden" name="item_id[]" value="">
         <div class="form-row flex-wrap">
             <div class="form-group" style="flex: 0 0 120px;">
                 <label>Tipo*</label>
