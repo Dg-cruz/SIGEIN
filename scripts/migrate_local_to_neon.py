@@ -174,6 +174,19 @@ def sql_literal(cur, value):
     return cur.mogrify("%s", (value,)).decode("utf-8")
 
 
+def model_columns(table: str) -> set[str] | None:
+    """Colunas do schema SQLAlchemy (Neon). None = tabela fora do model."""
+    try:
+        from database import Base
+        import models  # noqa: F401
+    except Exception:
+        return None
+    meta = Base.metadata.tables.get(table)
+    if meta is None:
+        return None
+    return {c.name for c in meta.columns}
+
+
 def dump_sql(local_url: str, output: Path) -> None:
     """Gera arquivo SQL (somente dados) para importar no Neon via psql."""
     conn = connect(local_url)
@@ -197,12 +210,45 @@ def dump_sql(local_url: str, output: Path) -> None:
         with conn.cursor() as cur:
             table_rows: dict[str, tuple[list[str], list]] = {}
             for table in ordered:
-                cur.execute(sql.SQL("SELECT * FROM {}").format(sql.Identifier(table)))
+                cur.execute(
+                    """
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = %s
+                      AND column_name = 'id'
+                    """,
+                    (table,),
+                )
+                has_id = cur.fetchone() is not None
+                if has_id:
+                    cur.execute(
+                        sql.SQL("SELECT * FROM {} ORDER BY id").format(
+                            sql.Identifier(table)
+                        )
+                    )
+                else:
+                    cur.execute(
+                        sql.SQL("SELECT * FROM {}").format(sql.Identifier(table))
+                    )
                 rows = list(cur.fetchall())
                 columns = [desc[0] for desc in cur.description]
                 if not rows:
                     table_rows[table] = (columns, [])
                     continue
+
+                # Remove colunas legadas do banco local que nao existem no schema Neon.
+                allowed = model_columns(table)
+                if allowed is not None:
+                    keep_idx = [i for i, c in enumerate(columns) if c in allowed]
+                    dropped = [c for c in columns if c not in allowed]
+                    if dropped:
+                        print(
+                            f"[AVISO] {table}: colunas ignoradas (fora do model): "
+                            f"{', '.join(dropped)}"
+                        )
+                    columns = [columns[i] for i in keep_idx]
+                    rows = [[row[i] for i in keep_idx] for row in rows]
 
                 dedupe_col = UNIQUE_DEDUPE_COLUMNS.get(table)
                 if dedupe_col and dedupe_col in columns and "id" in columns:

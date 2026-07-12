@@ -5,7 +5,10 @@
 {% block eprotocolo_content %}
 <div class="processo-detalhe-page" data-processo-id="{{ processo.id }}">
     <div class="page-toolbar">
-        <a href="/eprotocolo/processos/caixa" class="btn-voltar"><i class="fas fa-arrow-left"></i> Voltar à caixa</a>
+        <a href="/eprotocolo/processos/caixa" class="btn-voltar-eprotocolo">
+            <span class="btn-voltar-eprotocolo__icon" aria-hidden="true"><i class="fas fa-arrow-left"></i></span>
+            <span class="btn-voltar-eprotocolo__label">Voltar à caixa</span>
+        </a>
         <div class="font-size-controls">
             <button type="button" class="font-btn" data-size="1" title="Texto menor">A</button>
             <button type="button" class="font-btn" data-size="2" title="Texto normal">A⁻</button>
@@ -306,8 +309,6 @@
 .swal2-container { z-index: 99999 !important; }            /* Garante que o SweetAlert fique acima de tudo */
 .processo-detalhe-page { max-width: 1200px; margin: 0 auto; padding: 24px; }
 .page-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-.btn-voltar { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 6px; font-size: 14px; text-decoration: none; color: #0d6efd; background: #f8f9fa; border: 1px solid #dee2e6; }
-.btn-voltar:hover { background: #e9ecef; }
 .font-size-controls { display: flex; gap: 4px; }
 .font-btn { background: #f0f0f0; border: 1px solid #ddd; padding: 6px 10px; cursor: pointer; font-size: 14px; border-radius: 4px; color: #1a1a1a; }
 .font-btn:hover { background: #e0e0e0; }

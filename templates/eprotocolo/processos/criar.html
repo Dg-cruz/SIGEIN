@@ -4,9 +4,15 @@
 
 {% block eprotocolo_content %}
 <div class="processo-criar-page">
-    {% if request.query_params.get('erro') == 'destinatario' %}
+    {% if erro_msg %}
+    <div class="alert alert-warning">{{ erro_msg }}</div>
+    {% elif request.query_params.get('erro') == 'destinatario' %}
     <div class="alert alert-warning">
         Por favor, selecione o destinatário (Estado, Município, Órgão e Unidade).
+    </div>
+    {% elif request.query_params.get('erro') == 'origem' %}
+    <div class="alert alert-warning">
+        Seu usuário está sem município/órgão/unidade de lotação. Atualize o cadastro do usuário antes de criar processos.
     </div>
     {% endif %}
     <div class="page-header">

@@ -406,14 +406,14 @@ class Processo(Base):
     conteudo = Column(Text)
     
     # ✅ Origem (quem criou)
-    municipio_origem_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
-    orgao_origem_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False)
-    unidade_origem_id = Column(Integer, ForeignKey("unidades.id"), nullable=False)
+    municipio_origem_id = Column(Integer, ForeignKey("municipios.id"), nullable=True)
+    orgao_origem_id = Column(Integer, ForeignKey("orgaos.id"), nullable=True)
+    unidade_origem_id = Column(Integer, ForeignKey("unidades.id"), nullable=True)
     
     # ✅ Localização atual (onde está agora)
-    municipio_atual_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
-    orgao_atual_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False)
-    unidade_atual_id = Column(Integer, ForeignKey("unidades.id"), nullable=False)
+    municipio_atual_id = Column(Integer, ForeignKey("municipios.id"), nullable=True)
+    orgao_atual_id = Column(Integer, ForeignKey("orgaos.id"), nullable=True)
+    unidade_atual_id = Column(Integer, ForeignKey("unidades.id"), nullable=True)
     
     # Status: Em tramitação | Recebido | Em edição | Assinado
     status = Column(String(50), default="Em tramitação")

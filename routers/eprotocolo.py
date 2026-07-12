@@ -14,6 +14,33 @@ from datetime import datetime
 router = APIRouter(prefix="/eprotocolo", tags=["E-Protocolo"])
 
 
+def _filtro_processos_unidade(u: User):
+    """
+    Processos visíveis na caixa/histórico da unidade do usuário:
+    - na unidade atual ou de origem
+    - criados pelo próprio usuário (cobre legado sem unidade preenchida)
+    - mesmo órgão quando unidade atual/origem está nula (dados incompletos)
+    """
+    clauses = [
+        Processo.unidade_atual_id == u.unidade_id,
+        Processo.unidade_origem_id == u.unidade_id,
+        Processo.created_by == u.id,
+    ]
+    if u.orgao_id:
+        clauses.append(
+            (Processo.unidade_atual_id.is_(None) & (Processo.orgao_atual_id == u.orgao_id))
+        )
+        clauses.append(
+            (Processo.unidade_origem_id.is_(None) & (Processo.orgao_origem_id == u.orgao_id))
+        )
+    return or_(*clauses)
+
+
+def _filtro_nao_arquivado():
+    """Trata arquivado NULL como não arquivado."""
+    return or_(Processo.arquivado.is_(False), Processo.arquivado.is_(None))
+
+
 # ========================================
 # DASHBOARD PRINCIPAL
 # ========================================
@@ -56,9 +83,24 @@ def processos_criar(
     if not u:
         return RedirectResponse("/login")
     estados = db.query(Estado).order_by(Estado.nome).all()
+    erro = request.query_params.get("erro")
+    erro_msg = None
+    if erro == "destinatario":
+        erro_msg = "Informe o destinatário completo (município, órgão e unidade)."
+    elif erro == "origem":
+        erro_msg = (
+            "Seu usuário está sem município/órgão/unidade de lotação. "
+            "Atualize o cadastro do usuário antes de criar processos."
+        )
     return templates.TemplateResponse(
         "eprotocolo/processos/criar.html",
-        {"request": request, "user": user, "user_obj": u, "estados": estados}
+        {
+            "request": request,
+            "user": user,
+            "user_obj": u,
+            "estados": estados,
+            "erro_msg": erro_msg,
+        }
     )
 
 
@@ -102,6 +144,11 @@ async def processos_criar_post(
     u = db.query(User).filter(User.email == user).first()
     if not u:
         return RedirectResponse("/login")
+    if not u.unidade_id or not u.orgao_id or not u.municipio_id:
+        return RedirectResponse(
+            "/eprotocolo/processos/criar?erro=origem",
+            status_code=303,
+        )
     form = await request.form()
     assunto = form.get("assunto") or ""
     requerente = form.get("requerente") or ""
@@ -124,6 +171,7 @@ async def processos_criar_post(
     count = db.query(Processo).filter(Processo.ano == ano).count()
     seq = count + 1
     numero = f"{seq:02d}/{ano}"
+    # Origem sempre da lotação do usuário logado (obrigatória)
     p = Processo(
         numero=numero,
         ano=ano,
@@ -169,11 +217,8 @@ def processos_caixa(
     u = db.query(User).filter(User.email == user).first()
     if not u:
         return RedirectResponse("/login")
-    # Base: processos na unidade atual OU criados pela unidade do usuário
-    base_filter = or_(
-        Processo.unidade_atual_id == u.unidade_id,
-        Processo.unidade_origem_id == u.unidade_id,
-    )
+    # Base: unidade atual/origem, criados pelo usuário ou órgão (legado sem unidade)
+    base_filter = _filtro_processos_unidade(u)
     q_base = db.query(Processo).filter(base_filter)
 
     # Filtro por aba (status e demais critérios da caixa)
@@ -182,7 +227,7 @@ def processos_caixa(
         q = q.filter(Processo.arquivado == True)
     else:
         # Nas demais abas, só processos não arquivados
-        q = q.filter(Processo.arquivado == False)
+        q = q.filter(_filtro_nao_arquivado())
         if aba == "urgentes":
             q = q.filter(Processo.urgente == True)
         elif aba == "assinados":
@@ -217,7 +262,7 @@ def processos_caixa(
     )
 
     # Contagens por aba (para badges) — abas de tramitação só consideram não arquivados
-    q_nao_arq = q_base.filter(Processo.arquivado == False)
+    q_nao_arq = q_base.filter(_filtro_nao_arquivado())
     cnt_todos = q_nao_arq.count()
     cnt_urgentes = q_nao_arq.filter(Processo.urgente == True).count()
     cnt_assinados = q_nao_arq.filter(Processo.status == "Assinado").count()
@@ -908,10 +953,7 @@ def processos_historico(
     u = db.query(User).filter(User.email == user).first()
     if not u:
         return RedirectResponse("/login")
-    base_filter = or_(
-        Processo.unidade_atual_id == u.unidade_id,
-        Processo.unidade_origem_id == u.unidade_id,
-    )
+    base_filter = _filtro_processos_unidade(u)
     q = db.query(Processo).filter(base_filter)
     if pesquisa and pesquisa.strip():
         termo = f"%{pesquisa.strip()}%"
@@ -1029,10 +1071,7 @@ def processos_arquivados(
     u = db.query(User).filter(User.email == user).first()
     if not u:
         return RedirectResponse("/login")
-    base_filter = or_(
-        Processo.unidade_atual_id == u.unidade_id,
-        Processo.unidade_origem_id == u.unidade_id,
-    )
+    base_filter = _filtro_processos_unidade(u)
     q = db.query(Processo).filter(base_filter, Processo.arquivado == True)
     if pesquisa and pesquisa.strip():
         termo = f"%{pesquisa.strip()}%"
