@@ -4,6 +4,7 @@ import re
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse
 from sqlalchemy import or_
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_302_FOUND
 from database import get_db
@@ -49,12 +50,24 @@ def login_post(
     login = username.strip()
     cpf = re.sub(r"\D", "", login)
 
-    user = db.query(models.User).filter(
-        or_(
-            models.User.email == login,
-            models.User.cpf == cpf,
+    try:
+        user = db.query(models.User).filter(
+            or_(
+                models.User.email == login,
+                models.User.cpf == cpf,
+            )
+        ).first()
+    except SQLAlchemyError:
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "error": (
+                    "Falha ao conectar ao banco de dados. "
+                    "Verifique a DATABASE_URL (Neon) na Vercel."
+                ),
+            },
         )
-    ).first()
 
     if not user or not _senha_confere(password, user.password):
         registrar_log(db, usuario=login, acao="Tentativa de login falhou", request=request)
@@ -97,10 +110,13 @@ def login_post(
         user.perfil.value if hasattr(user.perfil, "value") else str(user.perfil)
     )
 
-    user.ultimo_acesso = agora_brasilia()
-    db.add(user)
+    try:
+        user.ultimo_acesso = agora_brasilia()
+        db.add(user)
+        registrar_log(db, usuario=user.email, acao="Login bem-sucedido", request=request)
+    except SQLAlchemyError:
+        db.rollback()
 
-    registrar_log(db, usuario=user.email, acao="Login bem-sucedido", request=request)
     return RedirectResponse(url="/dashboard", status_code=HTTP_302_FOUND)
 
 

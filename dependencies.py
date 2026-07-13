@@ -79,7 +79,7 @@ def registrar_log(
             municipio_id = u.municipio_id
 
     novo_log = models.Log(
-        usuario=usuario or "—",
+        usuario=(usuario or "—")[:50],
         acao=(acao or "")[:255],
         data_hora=agora_brasilia(),
         ip=(ip or "")[:50] if ip else None,
@@ -88,9 +88,12 @@ def registrar_log(
         tipo=_infer_tipo(acao, tipo),
         user_agent=user_agent,
     )
-    db.add(novo_log)
-    db.commit()
-    mark_audit_logged()
+    try:
+        db.add(novo_log)
+        db.commit()
+        mark_audit_logged()
+    except Exception:
+        db.rollback()
 
 
 def inject_current_user(request: Request):
