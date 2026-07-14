@@ -7,8 +7,7 @@ from models import Product, Unit, Category, Movement, User, Stock, Item, Unidade
 from services.stock_service import StockService
 from services.movement_form_data import build_movement_form_context
 from database import get_db
-from datetime import datetime
-from dependencies import get_current_user, registrar_log
+from dependencies import agora_brasilia, get_current_user, registrar_log
 from starlette.status import HTTP_302_FOUND
 from typing import Optional
 from templating import templates
@@ -509,7 +508,7 @@ def movimentacoes_update(
     movimento.tipo = tipo
     movimento.observacao = observacao
     movimento.user_id = user.id
-    movimento.data = datetime.utcnow()
+    movimento.data = agora_brasilia()
 
     if product.controla_por_serie and item and tipo in ["SAIDA", "TRANSFERENCIA"]:
         item.unit_id = unit_destino_id

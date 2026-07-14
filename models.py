@@ -5,6 +5,13 @@ from database import Base
 from datetime import datetime
 import enum
 
+
+def _agora_brasilia():
+    """Horário de Brasília (import diferido para evitar ciclo com dependencies)."""
+    from dependencies import agora_brasilia
+    return agora_brasilia()
+
+
 # =====================================================
 # ENUMS
 # =====================================================
@@ -282,7 +289,7 @@ class Movement(Base):
     quantidade = Column(Integer, default=1)
     tipo = Column(String(30), nullable=False)
 
-    data = Column(DateTime, default=datetime.utcnow)
+    data = Column(DateTime, default=_agora_brasilia)
     observacao = Column(Text)
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)

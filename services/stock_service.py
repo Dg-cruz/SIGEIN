@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from models import Product, Item, Stock, Movement, Unidade
-from datetime import datetime
+from dependencies import agora_brasilia
 
 
 def _validar_unidade_existe(db: Session, unit_id: int, campo: str) -> None:
@@ -103,7 +103,7 @@ class StockService:
             tipo=tipo,
             observacao=observacao,
             user_id=user_id,
-            data=datetime.utcnow()
+            data=agora_brasilia(),
         )
 
         db.add(item)
@@ -172,7 +172,7 @@ class StockService:
             tipo=tipo,
             observacao=observacao,
             user_id=user_id,
-            data=datetime.utcnow()
+            data=agora_brasilia(),
         )
 
         db.add(movement)

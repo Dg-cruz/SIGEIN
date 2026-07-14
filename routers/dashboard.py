@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -19,7 +19,7 @@ def build_dashboard_metrics(db: Session) -> dict:
     )
     zero_stock_products = db.query(Stock).filter(Stock.quantidade <= 0).count()
 
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    seven_days_ago = agora_brasilia() - timedelta(days=7)
     recent_movements_count = (
         db.query(Movement).filter(Movement.data >= seven_days_ago).count()
     )
