@@ -1084,5 +1084,103 @@ class PaiolAssinatura(Base):
     user = relationship("User")
 
 
+# =====================================================
+# CAD — Central de Atendimento e Despacho
+# =====================================================
+
+class CadOcorrencia(Base):
+    """Ocorrência / atendimento no padrão SINESP CAD (municipal)."""
+    __tablename__ = "cad_ocorrencias"
+
+    id = Column(Integer, primary_key=True, index=True)
+    protocolo = Column(String(30), unique=True, nullable=False, index=True)
+
+    # Contexto institucional
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=True)
+    unidade_id = Column(Integer, ForeignKey("unidades.id"), nullable=True)
+
+    # Atendimento
+    canal = Column(String(30), nullable=False, default="153")
+    prioridade = Column(String(20), nullable=False, default="rotina")
+    status = Column(String(40), nullable=False, default="aberta")
+    data_hora_fato = Column(DateTime, nullable=True)
+    data_hora_registro = Column(DateTime, nullable=False, default=_agora_brasilia)
+
+    # Solicitante
+    solicitante_nome = Column(String(200), nullable=True)
+    solicitante_telefone = Column(String(30), nullable=True)
+    solicitante_documento = Column(String(30), nullable=True)
+    solicitante_anonimo = Column(Boolean, default=False)
+
+    # Natureza do fato
+    tipo_natureza = Column(String(20), nullable=False, default="atipica")
+    natureza_codigo = Column(String(50), nullable=False)
+    natureza_nome = Column(String(200), nullable=False)
+    natureza_grupo = Column(String(100), nullable=True)
+    meio_empregado = Column(String(40), nullable=False, default="nao_houve")
+    tentado = Column(Boolean, default=False)
+    em_evento = Column(Boolean, default=False)
+    evento_descricao = Column(String(200), nullable=True)
+
+    # Endereço do fato
+    cep = Column(String(9), nullable=True)
+    logradouro = Column(String(255), nullable=True)
+    numero = Column(String(20), nullable=True)
+    complemento = Column(String(120), nullable=True)
+    bairro = Column(String(120), nullable=True)
+    cidade = Column(String(120), nullable=True)
+    uf = Column(String(2), nullable=True)
+    ponto_referencia = Column(String(255), nullable=True)
+    endereco_sem_cep = Column(Boolean, default=False)
+
+    # Relato
+    relato = Column(Text, nullable=True)
+    observacao = Column(Text, nullable=True)
+
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    updated_at = Column(DateTime, nullable=True, onupdate=_agora_brasilia)
+
+    municipio = relationship("Municipio")
+    orgao = relationship("Orgao")
+    unidade = relationship("Unidade")
+    criador = relationship("User", foreign_keys=[created_by])
+
+
+class CadDashboardWidget(Base):
+    """Widgets personalizados do dashboard CAD por usuário."""
+    __tablename__ = "cad_dashboard_widgets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    widget_key = Column(String(80), nullable=False)
+    sort_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=_agora_brasilia)
+
+    user = relationship("User")
+
+
+class CadOpcaoLista(Base):
+    """Opções configuráveis dos selects do módulo CAD."""
+    __tablename__ = "cad_opcoes_lista"
+
+    id = Column(Integer, primary_key=True, index=True)
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False, index=True)
+    tipo = Column(String(40), nullable=False, index=True)
+    codigo = Column(String(50), nullable=False)
+    label = Column(String(200), nullable=False)
+    # Natureza: grupo; outros tipos podem usar livremente
+    extra1 = Column(String(120), nullable=True)
+    # Natureza: tipica/atipica
+    extra2 = Column(String(50), nullable=True)
+    ordem = Column(Integer, default=0)
+    ativo = Column(Boolean, default=True)
+    sistema = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=_agora_brasilia)
+    updated_at = Column(DateTime, nullable=True, onupdate=_agora_brasilia)
+
+    municipio = relationship("Municipio")
+
+
 # Alias legado: vários routers ainda importam Unit
 Unit = Unidade

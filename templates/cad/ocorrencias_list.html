@@ -1,0 +1,194 @@
+{% extends "cad/cad_base.html" %}
+
+{% block title %}Ocorrências — CAD{% endblock %}
+
+{% block cad_content %}
+{% set voltar_url = "/cad" %}
+{% set voltar_text = "Voltar" %}
+
+<div class="cad-wrap cad-wrap--wide">
+  <header class="cad-page-header">
+    <div class="cad-page-header__title">
+      <p class="cad-kicker">CAD · Central de Atendimento e Despacho</p>
+      <h1>Ocorrências</h1>
+    </div>
+    <div class="cad-page-header__actions">
+      {% include "cad/partials/voltar.html" %}
+      <a class="mod-btn mod-btn--primary" href="/cad/ocorrencias/nova">
+        <i class="fas fa-plus"></i> Nova ocorrência
+      </a>
+    </div>
+  </header>
+
+  <form id="cad-ocorrencias-filtros" class="cad-filters cad-filters--grid cad-filters--ocorrencias" method="get" action="/cad/ocorrencias">
+    <div class="cad-filter">
+      <label for="filtro-protocolo">Protocolo</label>
+      <div class="cad-control">
+        <input type="search" id="filtro-protocolo" name="protocolo" value="{{ filtros.protocolo }}"
+               placeholder="Buscar protocolo" data-filter-text autocomplete="off">
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-registro">Registro</label>
+      <div class="cad-control">
+        <input type="date" id="filtro-registro" name="registro" value="{{ filtros.registro }}" data-filter-auto>
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-prioridade">Prioridade</label>
+      <div class="cad-control">
+        <select id="filtro-prioridade" name="prioridade" data-filter-auto>
+          <option value="">Todas</option>
+          {% for code, label in prioridades %}
+          <option value="{{ code }}" {% if filtros.prioridade == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-natureza">Natureza</label>
+      <div class="cad-control">
+        <select id="filtro-natureza" name="natureza" data-filter-auto>
+          <option value="">Todas</option>
+          {% for code, nome, grupo, tipo in naturezas %}
+          <option value="{{ code }}" {% if filtros.natureza == code %}selected{% endif %}>{{ nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-local">Local</label>
+      <div class="cad-control">
+        <input type="search" id="filtro-local" name="local" value="{{ filtros.local }}"
+               placeholder="Logradouro, bairro…" data-filter-text autocomplete="off">
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-status">Status</label>
+      <div class="cad-control">
+        <select id="filtro-status" name="status" data-filter-auto>
+          <option value="">Todos</option>
+          {% for code, label in status_list %}
+          <option value="{{ code }}" {% if filtros.status == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-atendente">Atendente</label>
+      <div class="cad-control">
+        <select id="filtro-atendente" name="atendente" data-filter-auto>
+          <option value="">Todos</option>
+          {% for aid, anome in atendentes %}
+          <option value="{{ aid }}" {% if filtros.atendente == aid|string %}selected{% endif %}>{{ anome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="cad-filters__actions">
+      <span class="cad-filters__spacer" aria-hidden="true"></span>
+      <a href="/cad/ocorrencias" class="mod-btn mod-btn--ghost{% if not filtros_ativos %} is-disabled{% endif %}">
+        Limpar filtros
+      </a>
+    </div>
+  </form>
+
+  <div class="cad-table-wrap cad-table-wrap--wide">
+    {% if ocorrencias %}
+    <table class="cad-table cad-table--ocorrencias">
+      <thead>
+        <tr>
+          <th>Protocolo</th>
+          <th>Registro</th>
+          <th>Prioridade</th>
+          <th>Natureza</th>
+          <th>Local</th>
+          <th>Status</th>
+          <th>Atendente</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in ocorrencias %}
+        {% set locked = o.status == 'encerrada' %}
+        {% set can_despacho = o.status not in ('encerrada', 'cancelada', 'aguardando_despacho') %}
+        <tr>
+          <td><strong>{{ o.protocolo }}</strong></td>
+          <td class="cad-col-registro">{{ o.data_hora_registro.strftime('%d/%m/%Y %H:%M') if o.data_hora_registro else '—' }}</td>
+          <td><span class="cad-pill cad-pill--{{ o.prioridade }}">{{ prioridade_labels.get(o.prioridade, o.prioridade) }}</span></td>
+          <td class="cad-col-natureza">{{ o.natureza_nome }}</td>
+          <td class="cad-col-local">
+            {% if o.logradouro %}{{ o.logradouro }}{% if o.numero %}, {{ o.numero }}{% endif %}{% if o.bairro %} — {{ o.bairro }}{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td><span class="cad-pill cad-pill--status">{{ status_labels.get(o.status, o.status) }}</span></td>
+          <td class="cad-col-atendente">{{ o.criador.nome if o.criador else '—' }}</td>
+          <td class="cad-col-acoes">
+            <div class="cad-row-actions">
+              {% if locked %}
+              <span class="mod-btn mod-btn--ghost is-disabled" title="Ocorrência encerrada">Editar</span>
+              <span class="mod-btn cad-btn-despacho is-disabled">Enviar Despacho</span>
+              <span class="mod-btn cad-btn-encerrar is-disabled">Encerrar</span>
+              {% else %}
+              <a class="mod-btn mod-btn--ghost" href="/cad/ocorrencias/{{ o.id }}">Editar</a>
+              {% if can_despacho %}
+              <form method="post" action="/cad/ocorrencias/{{ o.id }}/enviar-despacho" class="cad-inline-form">
+                <button type="submit" class="mod-btn cad-btn-despacho">Enviar Despacho</button>
+              </form>
+              {% else %}
+              <span class="mod-btn cad-btn-despacho is-disabled">Enviar Despacho</span>
+              {% endif %}
+              <form method="post" action="/cad/ocorrencias/{{ o.id }}/encerrar" class="cad-inline-form"
+                    onsubmit="return confirm('Encerrar a ocorrência {{ o.protocolo }}?');">
+                <button type="submit" class="mod-btn cad-btn-encerrar">Encerrar</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="cad-empty">
+      <p>{% if filtros_ativos %}Nenhuma ocorrência encontrada com estes filtros.{% else %}Nenhuma ocorrência encontrada.{% endif %}</p>
+      {% if filtros_ativos %}
+      <a class="mod-btn mod-btn--ghost" href="/cad/ocorrencias">Limpar filtros</a>
+      {% else %}
+      <a class="mod-btn mod-btn--primary" href="/cad/ocorrencias/nova">Registrar primeira ocorrência</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('cad-ocorrencias-filtros');
+  if (!form) return;
+  var timer = null;
+
+  function submitFiltros() {
+    form.requestSubmit ? form.requestSubmit() : form.submit();
+  }
+
+  form.querySelectorAll('[data-filter-auto]').forEach(function (el) {
+    el.addEventListener('change', submitFiltros);
+  });
+
+  form.querySelectorAll('[data-filter-text]').forEach(function (el) {
+    el.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(submitFiltros, 400);
+    });
+    el.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        clearTimeout(timer);
+        submitFiltros();
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,274 @@
+{% extends "cad/cad_base.html" %}
+{% set is_edit = ocorrencia is not none %}
+{% set locked = is_edit and ocorrencia.status == 'encerrada' %}
+
+{% block title %}{% if is_edit %}Ocorrência {{ ocorrencia.protocolo }}{% else %}Nova ocorrência{% endif %} — CAD{% endblock %}
+
+{% block cad_content %}
+{% set voltar_url = "/cad/ocorrencias" %}
+{% set voltar_text = "Voltar" %}
+
+<div class="cad-wrap">
+  <header class="cad-page-header">
+    <div class="cad-page-header__title">
+      <p class="cad-kicker">CAD · Central de Atendimento e Despacho</p>
+      <h1>{% if is_edit %}Ocorrência {{ ocorrencia.protocolo }}{% else %}Nova ocorrência{% endif %}</h1>
+      <p>Atendimento emergencial — campos alinhados ao SINESP CAD</p>
+    </div>
+    <div class="cad-page-header__actions">
+      {% include "cad/partials/voltar.html" %}
+      {% if not is_edit %}
+      <a class="mod-btn mod-btn--ghost" href="/cad">Painel</a>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if request.query_params.get('erro') == 'encerrada' %}
+  <div class="cad-alert">Ocorrência encerrada não pode ser editada.</div>
+  {% endif %}
+
+  {% if is_edit %}
+  <div class="cad-meta">
+    <span><strong>Protocolo:</strong> {{ ocorrencia.protocolo }}</span>
+    <span><strong>Registro:</strong> {{ ocorrencia.data_hora_registro.strftime('%d/%m/%Y %H:%M') if ocorrencia.data_hora_registro else '—' }}</span>
+    <span><strong>Atendente:</strong> {{ ocorrencia.criador.nome if ocorrencia.criador else '—' }}</span>
+    <span class="cad-pill cad-pill--{{ ocorrencia.prioridade }}">{{ prioridade_labels.get(ocorrencia.prioridade, ocorrencia.prioridade) }}</span>
+    <span class="cad-pill cad-pill--status">{{ status_labels.get(ocorrencia.status, ocorrencia.status) }}</span>
+  </div>
+  {% endif %}
+
+  <form method="post" action="{% if is_edit %}/cad/ocorrencias/{{ ocorrencia.id }}{% else %}/cad/ocorrencias/nova{% endif %}" {% if locked %}onsubmit="return false;"{% endif %}>
+
+    <section class="cad-form-section">
+      <div class="cad-form-section__head">1. Identificação do atendimento</div>
+      <div class="cad-form-section__body">
+        <div class="cad-grid cad-grid--controls">
+          <div class="cad-field cad-field--3">
+            <label for="canal">Canal de acionamento *</label>
+            <div class="cad-control">
+              <select id="canal" name="canal" required {% if locked %}disabled{% endif %}>
+                {% for code, label in canais %}
+                <option value="{{ code }}" {% if (ocorrencia.canal if is_edit else '153') == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="prioridade">Prioridade *</label>
+            <div class="cad-control">
+              <select id="prioridade" name="prioridade" required {% if locked %}disabled{% endif %}>
+                {% for code, label in prioridades %}
+                <option value="{{ code }}" {% if (ocorrencia.prioridade if is_edit else 'rotina') == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="status">Situação *</label>
+            <div class="cad-control">
+              <select id="status" name="status" required {% if locked %}disabled{% endif %}>
+                {% for code, label in status_list %}
+                <option value="{{ code }}" {% if (ocorrencia.status if is_edit else 'aberta') == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="data_hora_fato">Data/hora do fato</label>
+            <div class="cad-control">
+              <input type="datetime-local" id="data_hora_fato" name="data_hora_fato"
+                value="{% if is_edit and ocorrencia.data_hora_fato %}{{ ocorrencia.data_hora_fato.strftime('%Y-%m-%dT%H:%M') }}{% elif agora_valor %}{{ agora_valor }}{% endif %}"
+                {% if locked %}disabled{% endif %}>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cad-form-section">
+      <div class="cad-form-section__head">2. Solicitante</div>
+      <div class="cad-form-section__body">
+        <div class="cad-grid">
+          <div class="cad-field cad-field--6">
+            <label for="solicitante_nome">Nome</label>
+            <input type="text" id="solicitante_nome" name="solicitante_nome" maxlength="200"
+              value="{{ ocorrencia.solicitante_nome if is_edit and ocorrencia.solicitante_nome else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="solicitante_telefone">Telefone</label>
+            <input type="text" id="solicitante_telefone" name="solicitante_telefone" maxlength="30"
+              value="{{ ocorrencia.solicitante_telefone if is_edit and ocorrencia.solicitante_telefone else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="solicitante_documento">Documento (CPF/RG)</label>
+            <input type="text" id="solicitante_documento" name="solicitante_documento" maxlength="30"
+              value="{{ ocorrencia.solicitante_documento if is_edit and ocorrencia.solicitante_documento else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--12">
+            <label class="cad-check" style="margin-top:0;">
+              <input type="checkbox" id="solicitante_anonimo" name="solicitante_anonimo" value="1"
+                {% if is_edit and ocorrencia.solicitante_anonimo %}checked{% endif %} {% if locked %}disabled{% endif %}>
+              Solicitante anônimo / não identificado
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cad-form-section">
+      <div class="cad-form-section__head">3. Natureza do fato</div>
+      <div class="cad-form-section__body">
+        <div class="cad-grid">
+          <div class="cad-field cad-field--3">
+            <label for="tipo_natureza">Tipo de natureza *</label>
+            <select id="tipo_natureza" name="tipo_natureza" required {% if locked %}disabled{% endif %}>
+              {% for code, label in tipos_natureza %}
+              <option value="{{ code }}" {% if (ocorrencia.tipo_natureza if is_edit else 'atipica') == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cad-field cad-field--6">
+            <label for="natureza_codigo">Natureza *</label>
+            <select id="natureza_codigo" name="natureza_codigo" required {% if locked %}disabled{% endif %}>
+              {% for code, nome, grupo, tipo in naturezas %}
+              <option value="{{ code }}" data-tipo="{{ tipo }}" data-grupo="{{ grupo }}"
+                {% if (ocorrencia.natureza_codigo if is_edit else 'averiguacao') == code %}selected{% endif %}>
+                {{ nome }} ({{ grupo }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="meio_empregado">Meio empregado *</label>
+            <select id="meio_empregado" name="meio_empregado" required {% if locked %}disabled{% endif %}>
+              {% for code, label in meios %}
+              <option value="{{ code }}" {% if (ocorrencia.meio_empregado if is_edit else 'nao_houve') == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label class="cad-check">
+              <input type="checkbox" id="tentado" name="tentado" value="1"
+                {% if is_edit and ocorrencia.tentado %}checked{% endif %} {% if locked %}disabled{% endif %}>
+              Tentado
+            </label>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label class="cad-check">
+              <input type="checkbox" id="em_evento" name="em_evento" value="1"
+                {% if is_edit and ocorrencia.em_evento %}checked{% endif %} {% if locked %}disabled{% endif %}>
+              Fato em evento
+            </label>
+          </div>
+          <div class="cad-field cad-field--6">
+            <label for="evento_descricao">Descrição do evento</label>
+            <input type="text" id="evento_descricao" name="evento_descricao" maxlength="200"
+              value="{{ ocorrencia.evento_descricao if is_edit and ocorrencia.evento_descricao else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cad-form-section">
+      <div class="cad-form-section__head">4. Endereço do fato</div>
+      <div class="cad-form-section__body">
+        <div class="cad-grid">
+          <div class="cad-field cad-field--3">
+            <label for="cep">CEP</label>
+            <div class="cad-cep-row">
+              <input type="text" id="cep" name="cep" maxlength="9" inputmode="numeric" autocomplete="postal-code"
+                value="{{ ocorrencia.cep if is_edit and ocorrencia.cep else '' }}" {% if locked %}disabled{% endif %}>
+              <button type="button" class="mod-btn mod-btn--ghost cad-cep-btn" id="btn-buscar-cep"
+                      title="Buscar CEP" aria-label="Buscar CEP" {% if locked %}disabled{% endif %}>
+                <i class="fas fa-search" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div id="cep-msg" class="cad-cep-msg" aria-live="polite"></div>
+          </div>
+          <div class="cad-field cad-field--6">
+            <label for="logradouro">Logradouro</label>
+            <input type="text" id="logradouro" name="logradouro" maxlength="255"
+              value="{{ ocorrencia.logradouro if is_edit and ocorrencia.logradouro else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="numero">Número</label>
+            <input type="text" id="numero" name="numero" maxlength="20"
+              value="{{ ocorrencia.numero if is_edit and ocorrencia.numero else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--4">
+            <label for="complemento">Complemento</label>
+            <input type="text" id="complemento" name="complemento" maxlength="120"
+              value="{{ ocorrencia.complemento if is_edit and ocorrencia.complemento else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--4">
+            <label for="bairro">Bairro</label>
+            <input type="text" id="bairro" name="bairro" maxlength="120"
+              value="{{ ocorrencia.bairro if is_edit and ocorrencia.bairro else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="cidade">Município</label>
+            <input type="text" id="cidade" name="cidade" maxlength="120"
+              value="{{ ocorrencia.cidade if is_edit and ocorrencia.cidade else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--2">
+            <label for="uf">UF</label>
+            <input type="text" id="uf" name="uf" maxlength="2"
+              value="{{ ocorrencia.uf if is_edit and ocorrencia.uf else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--8">
+            <label for="ponto_referencia">Ponto de referência</label>
+            <input type="text" id="ponto_referencia" name="ponto_referencia" maxlength="255"
+              value="{{ ocorrencia.ponto_referencia if is_edit and ocorrencia.ponto_referencia else '' }}" {% if locked %}disabled{% endif %}>
+          </div>
+          <div class="cad-field cad-field--4">
+            <label class="cad-check">
+              <input type="checkbox" id="endereco_sem_cep" name="endereco_sem_cep" value="1"
+                {% if is_edit and ocorrencia.endereco_sem_cep %}checked{% endif %} {% if locked %}disabled{% endif %}>
+              Endereço sem CEP / área rural
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cad-form-section">
+      <div class="cad-form-section__head">5. Relato do atendimento</div>
+      <div class="cad-form-section__body">
+        <div class="cad-grid">
+          <div class="cad-field cad-field--12">
+            <label for="relato">Relato / informações do solicitante</label>
+            <textarea id="relato" name="relato" {% if locked %}disabled{% endif %}>{{ ocorrencia.relato if is_edit and ocorrencia.relato else '' }}</textarea>
+          </div>
+          <div class="cad-field cad-field--12">
+            <label for="observacao">Observações internas</label>
+            <textarea id="observacao" name="observacao" {% if locked %}disabled{% endif %}>{{ ocorrencia.observacao if is_edit and ocorrencia.observacao else '' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {% if not locked %}
+    <div class="cad-form-footer">
+      <a href="/cad/ocorrencias" class="mod-btn mod-btn--ghost">Cancelar</a>
+      <button type="submit" name="enviar_despacho" value="1" class="cad-btn cad-btn--warn">
+        <i class="fas fa-tower-broadcast"></i> Salvar e enviar ao despacho
+      </button>
+      <button type="submit" class="mod-btn mod-btn--primary"><i class="fas fa-save"></i> Salvar ocorrência</button>
+    </div>
+    {% endif %}
+  </form>
+</div>
+
+<script src="{{ url_for('static', path='js/cad-ocorrencia.js') }}?v=3"></script>
+<script>
+(function () {
+  var natureza = document.getElementById('natureza_codigo');
+  var tipo = document.getElementById('tipo_natureza');
+  if (!natureza || !tipo) return;
+  natureza.addEventListener('change', function () {
+    var opt = natureza.options[natureza.selectedIndex];
+    if (opt && opt.dataset.tipo) tipo.value = opt.dataset.tipo;
+  });
+})();
+</script>
+{% endblock %}

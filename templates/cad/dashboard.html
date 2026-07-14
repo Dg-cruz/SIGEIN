@@ -1,0 +1,134 @@
+{% extends "cad/cad_base.html" %}
+
+{% block title %}CAD — Central de Atendimento e Despacho{% endblock %}
+
+{% block cad_content %}
+<div class="cad-dash">
+  <header class="cad-dash-header">
+    <div>
+      <p class="cad-eyebrow">Módulo operacional</p>
+      <h1>Central de Atendimento e Despacho</h1>
+      <p class="cad-subtitle">Painel com os principais indicadores das ocorrências do CAD</p>
+    </div>
+    <div class="cad-dash-header__meta">
+      <a class="cad-btn" href="/cad/ocorrencias/nova"><i class="fas fa-plus"></i> Nova ocorrência</a>
+      <span class="cad-badge cad-badge--soft">Atualizado {{ metrics.updated_at }}</span>
+    </div>
+  </header>
+
+  <section class="cad-dash-section" aria-label="Indicadores personalizáveis">
+    <div class="cad-dash-section__head">
+      <h2>Indicadores da central</h2>
+      <button type="button" class="cad-plus-btn" id="btn-add-widget" title="Personalizar indicadores" aria-label="Personalizar indicadores">
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+    <div class="cad-kpi-grid" id="cad-kpi-grid">
+      {% for w in widgets %}
+      <article class="cad-kpi cad-kpi--{{ w.tone }}" data-widget-id="{{ w.id }}" data-widget-key="{{ w.widget_key }}">
+        <button type="button" class="cad-kpi__remove" data-remove-widget="{{ w.id }}" title="Remover quadro" aria-label="Remover">×</button>
+        <div class="cad-kpi__top">
+          <span class="cad-kpi__icon"><i class="fas {{ w.icon }}"></i></span>
+          <span class="cad-kpi__hint">{{ w.subtitle }}</span>
+        </div>
+        <div class="cad-kpi__value">{{ w.value }}</div>
+        <div class="cad-kpi__label">{{ w.label }}</div>
+      </article>
+      {% endfor %}
+    </div>
+    <p class="cad-dash-empty" id="cad-widgets-empty"{% if widgets %} hidden{% endif %}>
+      Clique no <strong>+</strong> para escolher quais informações exibir neste painel.
+    </p>
+  </section>
+
+  <div class="cad-dash-columns">
+    <section class="cad-panel">
+      <div class="cad-panel__head">
+        <h2>Ocorrências recentes</h2>
+        <a href="/cad/ocorrencias">Ver todas →</a>
+      </div>
+      {% if metrics.recentes %}
+      <div class="cad-recent-list">
+        {% for o in metrics.recentes %}
+        <a class="cad-recent-item" href="/cad/ocorrencias/{{ o.id }}">
+          <div>
+            <strong>{{ o.protocolo }}</strong>
+            <span>{{ o.natureza_nome }}</span>
+          </div>
+          <div class="cad-recent-item__meta">
+            <span class="cad-pill cad-pill--{{ o.prioridade }}">{{ prioridade_labels.get(o.prioridade, o.prioridade) }}</span>
+            <small>{{ o.data_hora_registro.strftime('%d/%m %H:%M') if o.data_hora_registro else '—' }}</small>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="cad-dash-empty">Nenhuma ocorrência registrada ainda.</p>
+      {% endif %}
+    </section>
+
+    <section class="cad-panel">
+      <div class="cad-panel__head">
+        <h2>Fila em aberto</h2>
+      </div>
+      <div class="cad-stat-rows">
+        {% set status_pairs = [
+          ('aberta', 'Aberta'),
+          ('em_atendimento', 'Em atendimento'),
+          ('aguardando_despacho', 'Aguardando despacho'),
+          ('empenhada', 'Empenhada'),
+          ('em_atendimento_campo', 'Em atendimento no campo')
+        ] %}
+        {% for code, label in status_pairs %}
+        <div class="cad-stat-row">
+          <span>{{ label }}</span>
+          <strong>{{ metrics.por_status.get(code, 0) }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="cad-panel__head cad-panel__head--sub">
+        <h2>Prioridade (abertas)</h2>
+      </div>
+      <div class="cad-stat-rows">
+        {% for code, label in [('emergencia','Emergência'),('urgente','Urgente'),('rotina','Rotina')] %}
+        <div class="cad-stat-row">
+          <span class="cad-pill cad-pill--{{ code }}">{{ label }}</span>
+          <strong>{{ metrics.por_prioridade.get(code, 0) }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <section class="cad-dash-section">
+    <div class="cad-dash-section__head">
+      <h2>Acesso rápido</h2>
+    </div>
+    <div class="cad-cards cad-cards--wide">
+      {% for item in cad_menu if item.key != 'painel' %}
+      <a href="{{ item.url }}" class="cad-card">
+        <i class="fas {{ item.icon }}"></i>
+        <h3>{{ item.label }}</h3>
+        <p>{{ item.subtitle }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<div id="cad-widget-modal" class="cad-modal" style="display:none;" aria-hidden="true">
+  <div class="cad-modal__backdrop" data-close="cad-widget-modal"></div>
+  <div class="cad-modal__dialog" role="dialog" aria-labelledby="cad-widget-title">
+    <h3 id="cad-widget-title">Personalizar indicadores</h3>
+    <p class="cad-modal__subtitle">Escolha quais informações deseja exibir nos quadros do dashboard.</p>
+    <div id="cad-widget-list" class="cad-modal__list"></div>
+    <p id="cad-widget-empty" class="cad-dash-empty" hidden>Todos os indicadores disponíveis já estão no painel.</p>
+    <div class="cad-modal__actions">
+      <button type="button" class="cad-btn cad-btn--ghost" data-close="cad-widget-modal">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', path='js/cad-dashboard.js') }}?v=1"></script>
+{% endblock %}

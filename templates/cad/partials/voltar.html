@@ -1,0 +1,6 @@
+{# Botão Voltar padrão do CAD (mesmo padrão dos demais módulos: mod-btn--back) #}
+{# Uso: {% include "cad/partials/voltar.html" %} #}
+{# Ou defina voltar_url / voltar_text no contexto #}
+<a href="{{ voltar_url | default('/cad') }}" class="mod-btn mod-btn--ghost mod-btn--back">
+    <i class="fas fa-arrow-left"></i> {{ voltar_text | default('Voltar') }}
+</a>
