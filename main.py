@@ -61,6 +61,15 @@ app.state.templates = templates
 # 5. DATABASE (import models para registrar todas as tabelas)
 # ========================================
 import models  # noqa: F401 - registra modelos no Base.metadata
+
+# No Vercel o create_all completo fica off (cold start). Tabelas novas do CAD
+# ainda precisam existir — cria só essas, com checkfirst (idempotente).
+_CAD_TABLES = [
+    models.CadOcorrencia.__table__,
+    models.CadDashboardWidget.__table__,
+    models.CadOpcaoLista.__table__,
+]
+
 if not IS_VERCEL or os.getenv("RUN_DB_MIGRATIONS") == "1":
     Base.metadata.create_all(bind=engine)
 
@@ -75,6 +84,12 @@ if not IS_VERCEL or os.getenv("RUN_DB_MIGRATIONS") == "1":
             pass
         finally:
             _db.close()
+else:
+    try:
+        Base.metadata.create_all(bind=engine, tables=_CAD_TABLES)
+    except Exception:
+        # Não derruba o app no cold start se o DB estiver temporariamente indisponível
+        pass
 
 # ========================================
 # 6. ROUTERS (POR ÚLTIMO)

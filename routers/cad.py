@@ -35,6 +35,31 @@ from templating import templates
 
 router = APIRouter(prefix="/cad", tags=["CAD"])
 
+_cad_schema_ready = False
+
+
+def _ensure_cad_schema() -> None:
+    """Garante tabelas CAD no DB (esp. Vercel, onde create_all completo fica off)."""
+    global _cad_schema_ready
+    if _cad_schema_ready:
+        return
+    try:
+        from database import Base, engine
+        from models import CadDashboardWidget, CadOcorrencia, CadOpcaoLista
+
+        Base.metadata.create_all(
+            bind=engine,
+            tables=[
+                CadOcorrencia.__table__,
+                CadDashboardWidget.__table__,
+                CadOpcaoLista.__table__,
+            ],
+        )
+        _cad_schema_ready = True
+    except Exception:
+        pass
+
+
 CAD_MENU = (
     {
         "key": "painel",
@@ -93,6 +118,9 @@ def _require_user(db: Session, user: str):
     u = _user_obj(db, user)
     if not u:
         return None, RedirectResponse("/login")
+    if not u.municipio_id:
+        return None, RedirectResponse("/dashboard")
+    _ensure_cad_schema()
     return u, None
 
 
