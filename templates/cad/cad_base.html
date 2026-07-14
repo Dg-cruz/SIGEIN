@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% set hide_app_header = True %}
+
+{# Base visual do módulo CAD — todas as telas devem estender este template #}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/cad.css') }}?v=13">
+<div class="cad-shell">
+  {% block cad_content %}{% endblock %}
+</div>
+{% endblock %}

@@ -1,0 +1,307 @@
+{% extends "cad/cad_base.html" %}
+
+{% block title %}Configurações — CAD{% endblock %}
+
+{% block cad_content %}
+{% set voltar_url = "/cad" %}
+{% set voltar_text = "Voltar" %}
+
+<div class="cad-wrap cad-wrap--config">
+  <header class="cad-page-header">
+    <div class="cad-page-header__title">
+      <p class="cad-kicker">CAD · Central de Atendimento e Despacho</p>
+      <h1>Configurações</h1>
+      <p>Cadastre e gerencie as opções dos campos de seleção do módulo</p>
+    </div>
+    <div class="cad-page-header__actions">
+      {% include "cad/partials/voltar.html" %}
+    </div>
+  </header>
+
+  {% if ok %}
+  <div class="cad-alert cad-alert--ok">Alteração salva com sucesso.</div>
+  {% endif %}
+  {% if erro %}
+  <div class="cad-alert">{{ erro }}</div>
+  {% endif %}
+
+  <div class="cad-config-tabs">
+    {% for code, label in tipos_opcao %}
+    <a href="/cad/configuracoes?tipo={{ code }}&por_pagina={{ por_pagina }}"
+       class="cad-config-tab{% if tipo_atual == code %} is-active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="cad-dash-columns cad-dash-columns--config">
+    <section class="cad-panel">
+      <div class="cad-panel__head">
+        <h2>{{ tipo_label }}</h2>
+        <label class="cad-config-page-size">
+          Por página
+          <select id="por-pagina" onchange="cadConfigPorPagina(this.value)">
+            {% for n in [5, 10, 25, 50] %}
+            <option value="{{ n }}" {% if por_pagina == n %}selected{% endif %}>{{ n }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <div class="cad-table-wrap cad-table-wrap--config" style="border:none;">
+        <table class="cad-table cad-table--config">
+          <thead>
+            <tr>
+              <th>Ordem</th>
+              <th>Código</th>
+              <th>Nome</th>
+              {% if tipo_atual == 'natureza' %}
+              <th>Grupo</th>
+              <th>Tipo</th>
+              {% endif %}
+              <th>Ativo</th>
+              <th>Origem</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in opcoes %}
+            <tr class="{% if not o.ativo %}is-inactive{% endif %}">
+              <td>{{ o.ordem }}</td>
+              <td><code>{{ o.codigo }}</code></td>
+              <td class="cad-config-nome">{{ o.label }}</td>
+              {% if tipo_atual == 'natureza' %}
+              <td>{{ o.extra1 or '—' }}</td>
+              <td>{{ 'Típica' if o.extra2 == 'tipica' else 'Atípica' }}</td>
+              {% endif %}
+              <td>
+                {% if o.ativo %}
+                <span class="cad-pill cad-pill--status">Sim</span>
+                {% else %}
+                <span class="cad-pill cad-pill--muted">Não</span>
+                {% endif %}
+              </td>
+              <td>{{ 'Sistema' if o.sistema else 'Manual' }}</td>
+              <td class="cad-config-actions">
+                <button type="button" class="mod-btn mod-btn--ghost"
+                        data-edit
+                        data-id="{{ o.id }}"
+                        data-label="{{ o.label }}"
+                        data-extra1="{{ o.extra1 or '' }}"
+                        data-extra2="{{ o.extra2 or '' }}"
+                        data-ativo="{{ 1 if o.ativo else 0 }}"
+                        data-ordem="{{ o.ordem }}">Editar</button>
+                <form method="post" action="/cad/configuracoes/opcoes/{{ o.id }}/excluir" style="display:inline;"
+                      onsubmit="return confirm('{% if o.sistema %}Desativar esta opção de sistema?{% else %}Excluir esta opção?{% endif %}');">
+                  <input type="hidden" name="tipo" value="{{ tipo_atual }}">
+                  <button type="submit" class="mod-btn mod-btn--ghost">
+                    {% if o.sistema %}Desativar{% else %}Excluir{% endif %}
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="cad-empty">Nenhuma opção cadastrada neste tipo.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if total %}
+      <div class="cad-config-paginacao">
+        <span class="cad-config-paginacao__info">
+          Mostrando {{ ((pagina - 1) * por_pagina) + 1 }}–{{ ((pagina - 1) * por_pagina) + opcoes|length }} de {{ total }}
+        </span>
+        <div class="cad-config-paginacao__btns">
+          <a href="?tipo={{ tipo_atual }}&pagina=1&por_pagina={{ por_pagina }}"
+             class="cad-pag-btn{% if pagina <= 1 %} is-disabled{% endif %}">Primeiro</a>
+          <a href="?tipo={{ tipo_atual }}&pagina={{ pagina - 1 }}&por_pagina={{ por_pagina }}"
+             class="cad-pag-btn{% if pagina <= 1 %} is-disabled{% endif %}">Anterior</a>
+          {% if ultima_pagina <= 7 %}
+            {% for np in range(1, ultima_pagina + 1) %}
+            <a href="?tipo={{ tipo_atual }}&pagina={{ np }}&por_pagina={{ por_pagina }}"
+               class="cad-pag-btn{% if np == pagina %} is-active{% endif %}">{{ np }}</a>
+            {% endfor %}
+          {% else %}
+            {% for np in range(1, 4) %}
+            <a href="?tipo={{ tipo_atual }}&pagina={{ np }}&por_pagina={{ por_pagina }}"
+               class="cad-pag-btn{% if np == pagina %} is-active{% endif %}">{{ np }}</a>
+            {% endfor %}
+            <span class="cad-pag-ellipsis">…</span>
+            <a href="?tipo={{ tipo_atual }}&pagina={{ ultima_pagina }}&por_pagina={{ por_pagina }}"
+               class="cad-pag-btn{% if pagina == ultima_pagina %} is-active{% endif %}">{{ ultima_pagina }}</a>
+          {% endif %}
+          <a href="?tipo={{ tipo_atual }}&pagina={{ pagina + 1 }}&por_pagina={{ por_pagina }}"
+             class="cad-pag-btn{% if pagina >= ultima_pagina %} is-disabled{% endif %}">Próximo</a>
+          <a href="?tipo={{ tipo_atual }}&pagina={{ ultima_pagina }}&por_pagina={{ por_pagina }}"
+             class="cad-pag-btn{% if pagina >= ultima_pagina %} is-disabled{% endif %}">Último</a>
+        </div>
+      </div>
+      {% endif %}
+    </section>
+
+    <section class="cad-panel">
+      <div class="cad-panel__head">
+        <h2 id="form-title">Nova opção</h2>
+      </div>
+      <form method="post" action="/cad/configuracoes/opcoes" id="form-opcao" class="cad-config-form">
+        <input type="hidden" name="tipo" value="{{ tipo_atual }}">
+        <input type="hidden" name="ordem" id="ordem" value="0">
+
+        <div class="cad-field cad-field--12" style="margin-bottom:0.85rem;">
+          <label for="label">Nome exibido *</label>
+          <input type="text" id="label" name="label" required maxlength="200" placeholder="Ex.: Furto de veículo">
+        </div>
+
+        <div class="cad-field cad-field--12" style="margin-bottom:0.85rem;" id="wrap-codigo">
+          <label for="codigo">Código (opcional)</label>
+          <input type="text" id="codigo" name="codigo" maxlength="50" placeholder="Gerado automaticamente se vazio">
+          <small class="cad-hint">Usado internamente nos selects. Após criar, o código não muda.</small>
+        </div>
+
+        {% if tipo_atual == 'natureza' %}
+        <div class="cad-field cad-field--12" style="margin-bottom:0.85rem;">
+          <label for="extra1">Grupo</label>
+          <input type="text" id="extra1" name="extra1" maxlength="120" placeholder="Ex.: Patrimônio">
+        </div>
+        <div class="cad-field cad-field--12" style="margin-bottom:0.85rem;">
+          <label for="extra2">Tipo de natureza</label>
+          <select id="extra2" name="extra2">
+            <option value="atipica">Atípica</option>
+            <option value="tipica">Típica</option>
+          </select>
+        </div>
+        {% else %}
+        <input type="hidden" name="extra1" value="">
+        <input type="hidden" name="extra2" value="">
+        {% endif %}
+
+        <div class="cad-field cad-field--12" style="margin-bottom:1rem;" id="wrap-ativo" hidden>
+          <label class="cad-check" style="margin-top:0;">
+            <input type="checkbox" id="ativo" name="ativo" value="1" checked>
+            Opção ativa (aparece nos selects)
+          </label>
+        </div>
+
+        <div class="cad-form-footer" style="padding:0;">
+          <button type="button" class="mod-btn mod-btn--ghost" id="btn-cancel-edit" hidden>Cancelar edição</button>
+          <button type="submit" class="mod-btn mod-btn--primary" id="btn-submit">Cadastrar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>
+
+<style>
+.cad-wrap--config { max-width: 1680px; }
+.cad-config-tabs {
+  display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem;
+}
+.cad-config-tab {
+  text-decoration: none; padding: 0.45rem 0.85rem; border-radius: 999px;
+  border: 1px solid #d0dceb; background: #fff; color: #334155; font-size: 0.86rem; font-weight: 600;
+}
+.cad-config-tab.is-active, .cad-config-tab:hover {
+  background: #0d6efd; border-color: #0d6efd; color: #fff;
+}
+.cad-dash-columns--config {
+  grid-template-columns: minmax(0, 2.35fr) minmax(280px, 0.85fr);
+  gap: 1.15rem;
+}
+.cad-panel__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+}
+.cad-config-page-size {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.8rem; font-weight: 600; color: #64748b;
+}
+.cad-config-page-size select {
+  border: 1px solid #d0dceb; border-radius: 6px; padding: 0.25rem 0.45rem;
+  font-size: 0.82rem; background: #fff;
+}
+.cad-table-wrap--config { overflow-x: auto; }
+.cad-table--config th,
+.cad-table--config td { white-space: nowrap; vertical-align: middle; }
+.cad-table--config .cad-config-nome { min-width: 240px; }
+.cad-config-actions {
+  display: flex; flex-wrap: nowrap; gap: 0.35rem; justify-content: flex-end;
+}
+.cad-config-paginacao {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 0.75rem; padding: 0.85rem 1.1rem 1rem; border-top: 1px solid #e8eef6;
+}
+.cad-config-paginacao__info { font-size: 0.8rem; color: #64748b; font-weight: 600; }
+.cad-config-paginacao__btns { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.cad-pag-btn {
+  text-decoration: none; padding: 0.35rem 0.65rem; border-radius: 6px;
+  border: 1px solid #d0dceb; background: #fff; color: #334155;
+  font-size: 0.78rem; font-weight: 600;
+}
+.cad-pag-btn:hover:not(.is-disabled) { background: #eef4ff; border-color: #0d6efd; color: #0d6efd; }
+.cad-pag-btn.is-active { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+.cad-pag-btn.is-disabled { opacity: 0.4; pointer-events: none; }
+.cad-pag-ellipsis { padding: 0.35rem 0.25rem; color: #94a3b8; }
+.cad-hint { display: block; margin-top: 0.25rem; color: #64748b; font-size: 0.78rem; }
+.cad-alert--ok { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+tr.is-inactive td { opacity: 0.55; }
+code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.82rem; }
+@media (max-width: 1100px) {
+  .cad-dash-columns--config { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+(function () {
+  var form = document.getElementById('form-opcao');
+  var title = document.getElementById('form-title');
+  var wrapCodigo = document.getElementById('wrap-codigo');
+  var wrapAtivo = document.getElementById('wrap-ativo');
+  var btnCancel = document.getElementById('btn-cancel-edit');
+  var btnSubmit = document.getElementById('btn-submit');
+  var createAction = '/cad/configuracoes/opcoes';
+
+  window.cadConfigPorPagina = function (val) {
+    var url = new URL(window.location.href);
+    url.searchParams.set('por_pagina', val);
+    url.searchParams.set('pagina', '1');
+    window.location.href = url.toString();
+  };
+
+  function resetForm() {
+    form.action = createAction;
+    title.textContent = 'Nova opção';
+    btnSubmit.textContent = 'Cadastrar';
+    wrapCodigo.hidden = false;
+    wrapAtivo.hidden = true;
+    btnCancel.hidden = true;
+    form.querySelector('#label').value = '';
+    var codigo = form.querySelector('#codigo');
+    if (codigo) codigo.value = '';
+    var e1 = form.querySelector('#extra1');
+    var e2 = form.querySelector('#extra2');
+    if (e1 && e1.tagName === 'INPUT') e1.value = '';
+    if (e2 && e2.tagName === 'SELECT') e2.value = 'atipica';
+    form.querySelector('#ativo').checked = true;
+    form.querySelector('#ordem').value = '0';
+  }
+
+  document.querySelectorAll('[data-edit]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-id');
+      form.action = '/cad/configuracoes/opcoes/' + id;
+      title.textContent = 'Editar opção';
+      btnSubmit.textContent = 'Salvar alterações';
+      wrapCodigo.hidden = true;
+      wrapAtivo.hidden = false;
+      btnCancel.hidden = false;
+      form.querySelector('#label').value = btn.getAttribute('data-label') || '';
+      form.querySelector('#ordem').value = btn.getAttribute('data-ordem') || '0';
+      form.querySelector('#ativo').checked = btn.getAttribute('data-ativo') === '1';
+      var e1 = form.querySelector('#extra1');
+      var e2 = form.querySelector('#extra2');
+      if (e1 && e1.tagName === 'INPUT') e1.value = btn.getAttribute('data-extra1') || '';
+      if (e2 && e2.tagName === 'SELECT') e2.value = btn.getAttribute('data-extra2') || 'atipica';
+      form.querySelector('#label').focus();
+    });
+  });
+
+  if (btnCancel) btnCancel.addEventListener('click', resetForm);
+})();
+</script>
+{% endblock %}

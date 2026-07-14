@@ -1,73 +1,33 @@
-{% extends "base.html" %}
-{% set hide_app_header = True %}
+{% extends "cad/cad_base.html" %}
 
 {% block title %}{{ titulo }} — CAD{% endblock %}
 
-{% block content %}
-<div class="cad-page">
-    <div class="cad-page-top">
-        <a href="/cad" class="btn-voltar-eprotocolo">
-            <span class="btn-voltar-eprotocolo__icon" aria-hidden="true"><i class="fas fa-arrow-left"></i></span>
-            <span class="btn-voltar-eprotocolo__label">Voltar ao CAD</span>
-        </a>
-    </div>
+{% block cad_content %}
+{% set voltar_url = "/cad" %}
+{% set voltar_text = "Voltar" %}
 
-    <header class="cad-header cad-header--compact">
-        <div>
-            <p class="cad-eyebrow">CAD · Central de Atendimento e Despacho</p>
-            <h1>{{ titulo }}</h1>
-            <p class="cad-subtitle">{{ descricao }}</p>
-        </div>
-        <span class="cad-badge">Em construção</span>
-    </header>
-
-    <div class="cad-placeholder">
-        <i class="fas fa-screwdriver-wrench"></i>
-        <h2>Área em desenvolvimento</h2>
-        <p>Esta tela faz parte do módulo CAD e será implementada em seguida nesta branch.</p>
-        <div class="cad-placeholder-actions">
-            <a href="/cad" class="cad-btn">Ir ao painel</a>
-            {% for item in cad_menu if item.key != menu_key and item.key != 'painel' %}
-            <a href="{{ item.url }}" class="cad-btn cad-btn--ghost">{{ item.label }}</a>
-            {% endfor %}
-        </div>
+<div class="cad-wrap">
+  <header class="cad-page-header">
+    <div class="cad-page-header__title">
+      <p class="cad-kicker">CAD · Central de Atendimento e Despacho</p>
+      <h1>{{ titulo }}</h1>
+      <p>{{ descricao }}</p>
     </div>
+    <div class="cad-page-header__actions">
+      {% include "cad/partials/voltar.html" %}
+    </div>
+  </header>
+
+  <div class="cad-placeholder">
+    <i class="fas fa-screwdriver-wrench"></i>
+    <h2>Área em desenvolvimento</h2>
+    <p>Esta tela faz parte do módulo CAD e será implementada em seguida nesta branch.</p>
+    <div class="cad-placeholder-actions">
+      <a href="/cad" class="mod-btn mod-btn--primary">Ir ao painel</a>
+      {% for item in cad_menu if item.key != menu_key and item.key != 'painel' %}
+      <a href="{{ item.url }}" class="mod-btn mod-btn--ghost">{{ item.label }}</a>
+      {% endfor %}
+    </div>
+  </div>
 </div>
-
-<link rel="stylesheet" href="{{ url_for('static', path='css/eprotocolo.css') }}?v=1">
-<style>
-.cad-page { max-width: 1100px; margin: 0 auto; }
-.cad-page-top { margin-bottom: 1rem; }
-.cad-header {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
-    background: #0f2744; color: #fff; border-radius: 14px; padding: 1.5rem 1.6rem;
-    margin-bottom: 1.25rem;
-}
-.cad-header--compact h1 { font-size: 1.45rem; }
-.cad-eyebrow { margin: 0 0 0.35rem; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; }
-.cad-header h1 { margin: 0 0 0.4rem; font-weight: 700; }
-.cad-subtitle { margin: 0; opacity: 0.9; font-size: 0.95rem; }
-.cad-badge {
-    flex-shrink: 0; align-self: center;
-    background: rgba(125, 211, 252, 0.18); color: #7dd3fc;
-    border: 1px solid rgba(125, 211, 252, 0.35);
-    border-radius: 999px; padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600;
-}
-.cad-placeholder {
-    background: #fff; border: 1px solid #dbe4f3; border-radius: 12px;
-    padding: 2.5rem 1.5rem; text-align: center;
-}
-.cad-placeholder i { font-size: 2rem; color: #0d6efd; margin-bottom: 0.75rem; }
-.cad-placeholder h2 { margin: 0 0 0.5rem; color: #0f2744; font-size: 1.2rem; }
-.cad-placeholder p { margin: 0 auto 1.25rem; max-width: 420px; color: #5b6b7c; }
-.cad-placeholder-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
-.cad-btn {
-    display: inline-flex; align-items: center; padding: 0.55rem 1rem;
-    border-radius: 8px; background: #0d6efd; color: #fff; text-decoration: none; font-weight: 600; font-size: 0.9rem;
-}
-.cad-btn--ghost { background: #f1f5fb; color: #0f2744; border: 1px solid #d0dceb; }
-@media (max-width: 640px) {
-    .cad-header { flex-direction: column; }
-}
-</style>
 {% endblock %}
