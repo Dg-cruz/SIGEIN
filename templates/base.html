@@ -457,6 +457,42 @@
                     <span>SEGEM</span>
                 </a>
                 {% endif %}
+
+                <div class="sidebar-submenu sidebar-submenu--nav{% if path.startswith('/cad') %} open has-active{% endif %}" id="sidebarCad">
+                    <div class="sidebar-submenu__head">
+                        <a href="/cad" class="sidebar-submenu__link{% if path == '/cad' or path == '/cad/' %} is-active{% endif %}" title="Central de Atendimento e Despacho">
+                            <i class="fas fa-headset nav-icon"></i>
+                            <span>CAD</span>
+                        </a>
+                        <button type="button" class="sidebar-submenu__toggle" aria-expanded="{% if path.startswith('/cad') %}true{% else %}false{% endif %}" aria-label="Expandir CAD">
+                            <i class="fas fa-chevron-down sidebar-submenu__caret"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar-submenu__content">
+                        <div class="sidebar-submenu__inner">
+                            <a href="/cad/ocorrencias" class="sidebar-nav__link{% if path.startswith('/cad/ocorrencias') %} is-active{% endif %}">
+                                <i class="fas fa-phone-volume nav-icon"></i>
+                                <span>Ocorrências</span>
+                            </a>
+                            <a href="/cad/despacho" class="sidebar-nav__link{% if path.startswith('/cad/despacho') %} is-active{% endif %}">
+                                <i class="fas fa-tower-broadcast nav-icon"></i>
+                                <span>Despacho</span>
+                            </a>
+                            <a href="/cad/recursos" class="sidebar-nav__link{% if path.startswith('/cad/recursos') %} is-active{% endif %}">
+                                <i class="fas fa-car-side nav-icon"></i>
+                                <span>Recursos</span>
+                            </a>
+                            <a href="/cad/relatorios" class="sidebar-nav__link{% if path.startswith('/cad/relatorios') %} is-active{% endif %}">
+                                <i class="fas fa-chart-column nav-icon"></i>
+                                <span>Relatórios</span>
+                            </a>
+                            <a href="/cad/configuracoes" class="sidebar-nav__link{% if path.startswith('/cad/configuracoes') %} is-active{% endif %}">
+                                <i class="fas fa-gear nav-icon"></i>
+                                <span>Configurações</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="sidebar__section">
