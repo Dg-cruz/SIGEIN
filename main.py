@@ -98,7 +98,7 @@ from routers import (
     auth, dashboard, users, units, orgaos, movements, logs, root,
     equipment_types, brands, states, products, stock,
     categories, eprotocolo, api_geografica, geografia, segem, paiol, paiol_cadastro, paiol_estoque,
-    paiol_workflow, paiol_seguranca, paiol_relatorios, cad
+    paiol_workflow, paiol_seguranca, paiol_relatorios, cad, frota
 )
 
 app.include_router(root.router)
@@ -128,3 +128,4 @@ app.include_router(paiol_workflow.router)
 app.include_router(paiol_seguranca.router)
 app.include_router(paiol_relatorios.router)
 app.include_router(cad.router)
+app.include_router(frota.router)

@@ -1,0 +1,134 @@
+/* Gestão de Frota */
+.frota-shell { width: 100%; }
+.frota-wrap { max-width: 1200px; margin: 0 auto; width: 100%; }
+
+.frota-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.15rem;
+}
+.frota-page-header__title h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  color: #0f2744;
+  font-weight: 700;
+}
+.frota-page-header__title p {
+  margin: 0.3rem 0 0;
+  color: #5b6b7c;
+  font-size: 0.94rem;
+}
+.frota-kicker {
+  margin: 0 0 0.25rem !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b !important;
+  font-weight: 600;
+}
+.frota-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  margin: 2.35rem 0 0 auto;
+}
+
+.frota-dash-header {
+  margin-bottom: 1.5rem;
+}
+.frota-dash-header h1 {
+  margin: 0;
+  font-size: 1.65rem;
+  color: #0f2744;
+  font-weight: 700;
+}
+.frota-eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 600;
+}
+.frota-subtitle {
+  margin: 0.35rem 0 0;
+  color: #5b6b7c;
+  font-size: 0.95rem;
+}
+
+.frota-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.frota-card {
+  background: #fff;
+  border: 1px solid #d0dceb;
+  border-radius: 12px;
+  padding: 1.15rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.frota-card:hover {
+  border-color: #0d6efd;
+  transform: translateY(-2px);
+}
+.frota-card i {
+  font-size: 1.4rem;
+  color: #0d6efd;
+  margin-bottom: 0.65rem;
+  display: block;
+}
+.frota-card h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.98rem;
+  color: #0f2744;
+}
+.frota-card p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #5b6b7c;
+  line-height: 1.4;
+}
+
+.frota-placeholder {
+  background: #fff;
+  border: 1px solid #dbe4f3;
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+.frota-placeholder i {
+  font-size: 2rem;
+  color: #0d6efd;
+  margin-bottom: 0.75rem;
+}
+.frota-placeholder h2 {
+  margin: 0 0 0.5rem;
+  color: #0f2744;
+  font-size: 1.2rem;
+}
+.frota-placeholder p {
+  margin: 0 auto 1.25rem;
+  max-width: 420px;
+  color: #5b6b7c;
+}
+.frota-placeholder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.frota-shell .cad-control > select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M1.4 1.2 6 5.8l4.6-4.6L12 2.6 6 8.6 0 2.6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 0.75rem;
+  padding-right: 2rem;
+}

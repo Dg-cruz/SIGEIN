@@ -1,0 +1,25 @@
+{% extends "frota/frota_base.html" %}
+
+{% block title %}Gestão de Frota{% endblock %}
+
+{% block frota_content %}
+<div class="frota-wrap">
+  <header class="frota-dash-header">
+    <p class="frota-eyebrow">Módulo operacional</p>
+    <h1>Gestão de Frota</h1>
+    <p class="frota-subtitle">Controle de ativos, manutenções, vistorias e infrações da frota municipal</p>
+  </header>
+
+  <section aria-label="Acesso às áreas da frota">
+    <div class="frota-cards">
+      {% for item in frota_menu %}
+      <a href="{{ item.url }}" class="frota-card">
+        <i class="fas {{ item.icon }}"></i>
+        <h3>{{ item.label }}</h3>
+        <p>{{ item.subtitle }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

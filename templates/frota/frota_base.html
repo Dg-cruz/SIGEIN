@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% set hide_app_header = True %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/frota.css') }}?v=1">
+<div class="frota-shell">
+  {% block frota_content %}{% endblock %}
+</div>
+{% endblock %}

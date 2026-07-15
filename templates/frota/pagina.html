@@ -1,0 +1,33 @@
+{% extends "frota/frota_base.html" %}
+
+{% block title %}{{ titulo }} — Gestão de Frota{% endblock %}
+
+{% block frota_content %}
+{% set voltar_url = "/frota" %}
+{% set voltar_text = "Voltar" %}
+
+<div class="frota-wrap">
+  <header class="frota-page-header">
+    <div class="frota-page-header__title">
+      <p class="frota-kicker">Gestão de Frota</p>
+      <h1>{{ titulo }}</h1>
+      <p>{{ descricao }}</p>
+    </div>
+    <div class="frota-page-header__actions">
+      {% include "frota/partials/voltar.html" %}
+    </div>
+  </header>
+
+  <div class="frota-placeholder">
+    <i class="fas fa-screwdriver-wrench"></i>
+    <h2>Área em desenvolvimento</h2>
+    <p>Esta tela faz parte do módulo Gestão de Frota e será implementada em seguida nesta branch.</p>
+    <div class="frota-placeholder-actions">
+      <a href="/frota" class="mod-btn mod-btn--primary">Ir ao painel</a>
+      {% for item in frota_menu if item.key != menu_key %}
+      <a href="{{ item.url }}" class="mod-btn mod-btn--ghost">{{ item.label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

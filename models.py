@@ -1182,5 +1182,40 @@ class CadOpcaoLista(Base):
     municipio = relationship("Municipio")
 
 
+# =====================================================
+# GESTÃO DE FROTA
+# =====================================================
+
+class FrotaAtivo(Base):
+    """Ativo / veículo da frota municipal."""
+    __tablename__ = "frota_ativos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False, index=True)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=True)
+    unidade_id = Column(Integer, ForeignKey("unidades.id"), nullable=False)
+
+    numero_frota = Column(String(40), nullable=False, index=True)
+    chassi = Column(String(40), nullable=False)
+    renavam = Column(String(20), nullable=False)
+    placa = Column(String(10), nullable=False, index=True)
+    ano_modelo = Column(String(9), nullable=False)  # AAAA/AAAA
+
+    marca = Column(String(80), nullable=False)
+    modelo = Column(String(120), nullable=False)
+    tipo_veiculo = Column(String(50), nullable=False)
+    cor = Column(String(40), nullable=False)
+
+    status = Column(String(30), nullable=False, default="ativo")
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, nullable=False, default=_agora_brasilia)
+    updated_at = Column(DateTime, nullable=True, onupdate=_agora_brasilia)
+
+    municipio = relationship("Municipio")
+    orgao = relationship("Orgao")
+    unidade = relationship("Unidade")
+    criador = relationship("User", foreign_keys=[created_by])
+
+
 # Alias legado: vários routers ainda importam Unit
 Unit = Unidade

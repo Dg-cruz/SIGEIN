@@ -1,0 +1,146 @@
+{% extends "frota/frota_base.html" %}
+
+{% block title %}Cadastro de Ativo — Gestão de Frota{% endblock %}
+
+{% block frota_content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/cad.css') }}?v=14">
+{% set voltar_url = "/frota" %}
+{% set voltar_text = "Voltar" %}
+
+<div class="cad-wrap cad-wrap--wide">
+  <header class="cad-page-header">
+    <div class="cad-page-header__title">
+      <p class="cad-kicker">Gestão de Frota</p>
+      <h1>Cadastro de Ativo</h1>
+    </div>
+    <div class="cad-page-header__actions">
+      {% include "frota/partials/voltar.html" %}
+      <a class="mod-btn mod-btn--primary" href="/frota/cadastro-ativo/novo">
+        <i class="fas fa-plus"></i> Novo ativo
+      </a>
+    </div>
+  </header>
+
+  <form id="frota-ativos-filtros" class="cad-filters cad-filters--grid cad-filters--ocorrencias" method="get" action="/frota/cadastro-ativo">
+    <div class="cad-filter">
+      <label for="filtro-placa">Placa</label>
+      <div class="cad-control">
+        <input type="search" id="filtro-placa" name="placa" value="{{ filtros.placa }}"
+               placeholder="Buscar placa" data-filter-text autocomplete="off">
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-tipo">Tipo</label>
+      <div class="cad-control">
+        <select id="filtro-tipo" name="tipo" data-filter-auto>
+          <option value="">Todos</option>
+          {% for code, label in tipos %}
+          <option value="{{ code }}" {% if filtros.tipo == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-marca">Marca / Modelo</label>
+      <div class="cad-control">
+        <input type="search" id="filtro-marca" name="marca" value="{{ filtros.marca }}"
+               placeholder="Marca ou modelo…" data-filter-text autocomplete="off">
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-unidade">Unidade</label>
+      <div class="cad-control">
+        <select id="filtro-unidade" name="unidade" data-filter-auto>
+          <option value="">Todas</option>
+          {% for uid, unome in unidades %}
+          <option value="{{ uid }}" {% if filtros.unidade == uid|string %}selected{% endif %}>{{ unome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-ano">Ano/Modelo</label>
+      <div class="cad-control">
+        <input type="search" id="filtro-ano" name="ano" value="{{ filtros.ano }}"
+               placeholder="AAAA/AAAA" data-filter-text autocomplete="off">
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-status">Status</label>
+      <div class="cad-control">
+        <select id="filtro-status" name="status" data-filter-auto>
+          <option value="">Todos</option>
+          {% for code, label in status_list %}
+          <option value="{{ code }}" {% if filtros.status == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="cad-filter">
+      <label for="filtro-prefixo">N.º de Frota</label>
+      <div class="cad-control">
+        <input type="search" id="filtro-prefixo" name="prefixo" value="{{ filtros.prefixo }}"
+               placeholder="N.º de frota" data-filter-text autocomplete="off">
+      </div>
+    </div>
+    <div class="cad-filters__actions">
+      <span class="cad-filters__spacer" aria-hidden="true"></span>
+      <a href="/frota/cadastro-ativo" class="mod-btn mod-btn--ghost{% if not filtros_ativos %} is-disabled{% endif %}">
+        Limpar filtros
+      </a>
+    </div>
+  </form>
+
+  <div class="cad-table-wrap cad-table-wrap--wide">
+    {% if ativos %}
+    <table class="cad-table cad-table--ocorrencias">
+      <thead>
+        <tr>
+          <th>N.º Frota</th>
+          <th>Placa</th>
+          <th>Tipo</th>
+          <th>Marca / Modelo</th>
+          <th>Ano/Modelo</th>
+          <th>Unidade</th>
+          <th>Cor</th>
+          <th>Status</th>
+          <th>Data de Cadastro</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in ativos %}
+        <tr>
+          <td><strong>{{ a.numero_frota }}</strong></td>
+          <td>{{ format_placa(a.placa) }}</td>
+          <td>{{ tipo_labels.get(a.tipo_veiculo, a.tipo_veiculo) }}</td>
+          <td class="cad-col-natureza">{{ marca_labels.get(a.marca, a.marca) }} / {{ modelo_labels.get(a.modelo, a.modelo) }}</td>
+          <td class="cad-col-registro">{{ a.ano_modelo }}</td>
+          <td class="cad-col-atendente">{{ a.unidade.nome if a.unidade else '—' }}</td>
+          <td>{{ cor_labels.get(a.cor, a.cor) }}</td>
+          <td><span class="cad-pill cad-pill--status">{{ status_labels.get(a.status, a.status) }}</span></td>
+          <td class="cad-col-registro">{{ a.created_at.strftime('%d/%m/%Y %H:%M') if a.created_at else '—' }}</td>
+          <td class="cad-col-acoes">
+            <div class="cad-row-actions">
+              <a class="mod-btn mod-btn--ghost" href="/frota/cadastro-ativo/{{ a.id }}">Editar</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="cad-empty">
+      <p>{% if filtros_ativos %}Nenhum ativo encontrado com estes filtros.{% else %}Nenhum ativo cadastrado.{% endif %}</p>
+      {% if filtros_ativos %}
+      <a class="mod-btn mod-btn--ghost" href="/frota/cadastro-ativo">Limpar filtros</a>
+      {% else %}
+      <a class="mod-btn mod-btn--primary" href="/frota/cadastro-ativo/novo">Cadastrar primeiro ativo</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script src="{{ url_for('static', path='js/frota-ativos.js') }}?v=2"></script>
+{% endblock %}

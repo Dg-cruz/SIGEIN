@@ -1,0 +1,158 @@
+{% extends "frota/frota_base.html" %}
+{% set is_edit = is_edit|default(false) %}
+
+{% block title %}{% if is_edit %}Editar ativo{% else %}Novo ativo{% endif %} — Gestão de Frota{% endblock %}
+
+{% block frota_content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/cad.css') }}?v=14">
+{% set voltar_url = "/frota/cadastro-ativo" %}
+{% set voltar_text = "Voltar" %}
+
+<div class="cad-wrap">
+  <header class="cad-page-header">
+    <div class="cad-page-header__title">
+      <p class="cad-kicker">Gestão de Frota</p>
+      <h1>{% if is_edit %}Editar ativo{% else %}Novo ativo{% endif %}</h1>
+      <p>{% if is_edit %}Atualize os dados do veículo da frota{% else %}Identificação e classificação do veículo da frota{% endif %}</p>
+    </div>
+    <div class="cad-page-header__actions">
+      {% include "frota/partials/voltar.html" %}
+      <a class="mod-btn mod-btn--ghost" href="/frota">Painel</a>
+    </div>
+  </header>
+
+  {% if form_erro %}
+  <div class="cad-alert">
+    {% if form_erro == 'placa' %}Já existe um ativo com esta placa neste município.
+    {% elif form_erro == 'formato' %}Informe placa válida e Ano/Modelo no formato AAAA/AAAA.
+    {% elif form_erro == 'unidade' %}Selecione uma unidade administrativa válida.
+    {% else %}Preencha todos os campos obrigatórios.{% endif %}
+  </div>
+  {% endif %}
+
+  <form method="post"
+        action="{% if is_edit %}/frota/cadastro-ativo/{{ ativo.id }}{% else %}/frota/cadastro-ativo/novo{% endif %}"
+        id="frota-ativo-form">
+    <section class="cad-form-section">
+      <div class="cad-form-section__head">1. Identificação do veículo</div>
+      <div class="cad-form-section__body">
+        <div class="cad-grid cad-grid--controls">
+          <div class="cad-field cad-field--3">
+            <label for="numero_frota">N.º de Frota *</label>
+            <div class="cad-control">
+              <input type="text" id="numero_frota" name="numero_frota" maxlength="40" required
+                     value="{{ form.numero_frota }}" autocomplete="off">
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="placa">Placa *</label>
+            <div class="cad-control">
+              <input type="text" id="placa" name="placa" maxlength="8" required
+                     value="{{ form.placa }}" autocomplete="off"
+                     placeholder="ABC-1234" style="text-transform:uppercase;">
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="chassi">Chassi *</label>
+            <div class="cad-control">
+              <input type="text" id="chassi" name="chassi" maxlength="40" required
+                     value="{{ form.chassi }}" autocomplete="off" style="text-transform:uppercase;">
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="renavam">Renavam *</label>
+            <div class="cad-control">
+              <input type="text" id="renavam" name="renavam" maxlength="20" required
+                     value="{{ form.renavam }}" inputmode="numeric" autocomplete="off">
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="ano_modelo">Ano/Modelo *</label>
+            <div class="cad-control">
+              <input type="text" id="ano_modelo" name="ano_modelo" maxlength="9" required
+                     value="{{ form.ano_modelo }}" placeholder="AAAA/AAAA" inputmode="numeric"
+                     autocomplete="off" pattern="\d{4}/\d{4}" title="Formato AAAA/AAAA">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cad-form-section">
+      <div class="cad-form-section__head">2. Classificação</div>
+      <div class="cad-form-section__body">
+        <div class="cad-grid cad-grid--controls">
+          <div class="cad-field cad-field--6">
+            <label for="unidade_id">Unidade Administrativa *</label>
+            <div class="cad-control">
+              <select id="unidade_id" name="unidade_id" required>
+                <option value="">Selecione…</option>
+                {% for un in unidades_form %}
+                <option value="{{ un.id }}" {% if form.unidade_id == un.id|string %}selected{% endif %}>
+                  {{ un.nome }}{% if un.sigla %} ({{ un.sigla }}){% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="marca">Marca/Montadora *</label>
+            <div class="cad-control">
+              <select id="marca" name="marca" required>
+                <option value="">Selecione…</option>
+                {% for code, label in marcas %}
+                <option value="{{ code }}" {% if form.marca == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="modelo">Modelo *</label>
+            <div class="cad-control">
+              <select id="modelo" name="modelo" required>
+                <option value="">Selecione a marca…</option>
+                {% for code, label, marca_code in modelos %}
+                <option value="{{ code }}" data-marca="{{ marca_code }}"
+                        {% if form.modelo == code %}selected{% endif %}
+                        {% if form.marca != marca_code %}hidden{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="tipo_veiculo">Tipo de Veículo *</label>
+            <div class="cad-control">
+              <select id="tipo_veiculo" name="tipo_veiculo" required>
+                <option value="">Selecione…</option>
+                {% for code, label in tipos %}
+                <option value="{{ code }}" {% if form.tipo_veiculo == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="cad-field cad-field--3">
+            <label for="cor">Cor *</label>
+            <div class="cad-control">
+              <select id="cor" name="cor" required>
+                <option value="">Selecione…</option>
+                {% for code, label in cores %}
+                <option value="{{ code }}" {% if form.cor == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="cad-form-footer">
+      <a href="/frota/cadastro-ativo" class="mod-btn mod-btn--ghost">Cancelar</a>
+      <button type="submit" class="mod-btn mod-btn--primary">
+        <i class="fas fa-save"></i> {% if is_edit %}Salvar alterações{% else %}Salvar ativo{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+
+<script src="{{ url_for('static', path='js/frota-ativos.js') }}?v=3"></script>
+{% endblock %}

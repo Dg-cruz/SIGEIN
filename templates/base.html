@@ -399,6 +399,45 @@
                         </div>
                     </div>
                 </div>
+                <div class="sidebar-submenu sidebar-submenu--nav{% if path.startswith('/frota') %} open has-active{% endif %}" id="sidebarFrota">
+                    <div class="sidebar-submenu__head">
+                        <a href="/frota" class="sidebar-submenu__link{% if path == '/frota' or path == '/frota/' %} is-active{% endif %}" title="Gestão de Frota">
+                            <i class="fas fa-truck-front nav-icon"></i>
+                            <span>Gestão de Frota</span>
+                        </a>
+                        <button type="button" class="sidebar-submenu__toggle" aria-expanded="{% if path.startswith('/frota') %}true{% else %}false{% endif %}" aria-label="Expandir Gestão de Frota">
+                            <i class="fas fa-chevron-down sidebar-submenu__caret"></i>
+                        </button>
+                    </div>
+                    <div class="sidebar-submenu__content">
+                        <div class="sidebar-submenu__inner">
+                            <a href="/frota/cadastro-ativo" class="sidebar-nav__link{% if path.startswith('/frota/cadastro-ativo') %} is-active{% endif %}">
+                                <i class="fas fa-car nav-icon"></i>
+                                <span>Cadastro de Ativo</span>
+                            </a>
+                            <a href="/frota/checklist-vistoria" class="sidebar-nav__link{% if path.startswith('/frota/checklist-vistoria') %} is-active{% endif %}">
+                                <i class="fas fa-clipboard-check nav-icon"></i>
+                                <span>Checklist e Vistoria</span>
+                            </a>
+                            <a href="/frota/configuracoes" class="sidebar-nav__link{% if path.startswith('/frota/configuracoes') %} is-active{% endif %}">
+                                <i class="fas fa-gear nav-icon"></i>
+                                <span>Configurações</span>
+                            </a>
+                            <a href="/frota/multas-infracoes" class="sidebar-nav__link{% if path.startswith('/frota/multas-infracoes') %} is-active{% endif %}">
+                                <i class="fas fa-file-invoice nav-icon"></i>
+                                <span>Controle de Multas e Infrações</span>
+                            </a>
+                            <a href="/frota/historico-ocorrencias" class="sidebar-nav__link{% if path.startswith('/frota/historico-ocorrencias') %} is-active{% endif %}">
+                                <i class="fas fa-clock-rotate-left nav-icon"></i>
+                                <span>Histórico de Ocorrências</span>
+                            </a>
+                            <a href="/frota/manutencao" class="sidebar-nav__link{% if path.startswith('/frota/manutencao') %} is-active{% endif %}">
+                                <i class="fas fa-wrench nav-icon"></i>
+                                <span>Manutenção</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
                 <a href="/users" class="sidebar-nav__link{% if path.startswith('/users') %} is-active{% endif %}">
                     <i class="fas fa-users nav-icon"></i>
                     <span>Usuários</span>
