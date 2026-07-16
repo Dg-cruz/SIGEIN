@@ -1,36 +1,62 @@
 {% extends "base.html" %}
-{% import "macros/mod_list.html" as mod %}
-
+{% set hide_app_header = True %}
 {% block title %}{{ req.numero }} — Paiol{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
-<div class="mod-page" style="max-width:960px;margin:0 auto;padding:1rem;">
-  <div class="mod-header" style="margin-bottom:1.5rem;">
-    <a href="/paiol/movimentacoes/requisicoes" class="mod-back"><i class="fa-solid fa-arrow-left"></i></a>
-    <div>
-      <h1>{{ req.numero }}</h1>
-      <p>{{ status_labels.get(req.status, req.status) }} — {{ req.created_at.strftime('%d/%m/%Y %H:%M') if req.created_at else '' }}</p>
-    </div>
-  </div>
+
+<div class="container">
+  <h2>{{ req.numero }}</h2>
+  <p class="form-hint">
+    {{ status_labels.get(req.status, req.status) }}
+    {% if req.created_at %} — {{ req.created_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+  </p>
 
   {% if req.motivo_rejeicao %}
-  <p class="form-error">Rejeitada: {{ req.motivo_rejeicao }}</p>
+  <div class="form-error">Rejeitada: {{ req.motivo_rejeicao }}</div>
   {% endif %}
 
   <fieldset>
     <legend>Informações</legend>
-    <p><strong>Solicitante:</strong> {{ req.solicitante.nome if req.solicitante else '—' }}</p>
-    <p><strong>Unidade:</strong> {{ req.unidade.nome if req.unidade else '—' }}</p>
-    <p><strong>Depósito:</strong> {{ req.deposito.nome if req.deposito else '—' }}</p>
-    {% if req.observacao %}<p><strong>Observação:</strong> {{ req.observacao }}</p>{% endif %}
-    {% if req.aprovador %}<p><strong>Aprovador:</strong> {{ req.aprovador.nome }} em {{ req.aprovado_em.strftime('%d/%m/%Y %H:%M') if req.aprovado_em else '' }}</p>{% endif %}
+    <div class="form-readonly-box">
+      <div class="form-group">
+        <label>Solicitante</label>
+        <span>{{ req.solicitante.nome if req.solicitante else '—' }}</span>
+      </div>
+      <div class="form-group">
+        <label>Unidade</label>
+        <span>{{ req.unidade.nome if req.unidade else '—' }}</span>
+      </div>
+      <div class="form-group">
+        <label>Depósito</label>
+        <span>{{ req.deposito.nome if req.deposito else '—' }}</span>
+      </div>
+      {% if req.observacao %}
+      <div class="form-group">
+        <label>Observação</label>
+        <span>{{ req.observacao }}</span>
+      </div>
+      {% endif %}
+      {% if req.aprovador %}
+      <div class="form-group">
+        <label>Aprovador</label>
+        <span>{{ req.aprovador.nome }}{% if req.aprovado_em %} em {{ req.aprovado_em.strftime('%d/%m/%Y %H:%M') }}{% endif %}</span>
+      </div>
+      {% endif %}
+    </div>
   </fieldset>
 
   <fieldset>
     <legend>Itens</legend>
-    <table class="display mod-table--layout-cols" style="width:100%;">
-      <thead><tr><th>Material</th><th>Solicitado</th><th>Atendido</th><th>Pendente</th></tr></thead>
+    <table class="form-detail-table">
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>Solicitado</th>
+          <th>Atendido</th>
+          <th>Pendente</th>
+        </tr>
+      </thead>
       <tbody>
         {% for it in req.itens %}
         <tr>
@@ -47,7 +73,7 @@
   {% if assinaturas %}
   <fieldset>
     <legend>Assinaturas</legend>
-    <ul>
+    <ul class="form-detail-list">
       {% for a in assinaturas %}
       <li>{{ a.user.nome if a.user else '—' }} — {{ a.created_at.strftime('%d/%m/%Y %H:%M') if a.created_at else '' }}</li>
       {% endfor %}
@@ -55,18 +81,18 @@
   </fieldset>
   {% endif %}
 
-  <div class="buttons" style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:0.5rem;">
+  <div class="buttons">
     {% if req.status == 'rascunho' %}
-    <form method="post" action="/paiol/movimentacoes/requisicoes/{{ req.id }}/enviar" style="display:inline;">
+    <form method="post" action="/paiol/movimentacoes/requisicoes/{{ req.id }}/enviar">
       <button type="submit" class="btn-submit">Enviar para aprovação</button>
     </form>
-  <a href="/paiol/movimentacoes/requisicoes/edit/{{ req.id }}" class="btn-cancel">Editar</a>
+    <a href="/paiol/movimentacoes/requisicoes/edit/{{ req.id }}" class="btn-cancel">Editar</a>
     {% endif %}
     {% if req.status == 'pendente' %}
-    <form method="post" action="/paiol/movimentacoes/requisicoes/{{ req.id }}/aprovar" style="display:inline;">
+    <form method="post" action="/paiol/movimentacoes/requisicoes/{{ req.id }}/aprovar">
       <button type="submit" class="btn-submit">Aprovar</button>
     </form>
-    <form method="post" action="/paiol/movimentacoes/requisicoes/{{ req.id }}/rejeitar" style="display:inline;" onsubmit="var m=prompt('Motivo da rejeição:'); if(!m){return false;} this.motivo.value=m; return true;">
+    <form method="post" action="/paiol/movimentacoes/requisicoes/{{ req.id }}/rejeitar" onsubmit="var m=prompt('Motivo da rejeição:'); if(!m){return false;} this.motivo.value=m; return true;">
       <input type="hidden" name="motivo" value="">
       <button type="submit" class="btn-cancel">Rejeitar</button>
     </form>
@@ -75,7 +101,7 @@
     <a href="/paiol/movimentacoes/distribuicoes/add?req_id={{ req.id }}" class="btn-submit">Distribuir material</a>
     {% endif %}
     {% if req.status not in ['atendida', 'cancelada', 'rejeitada'] %}
-    <form method="post" action="/paiol/movimentacoes/requisicoes/{{ req.id }}/cancelar" style="display:inline;" onsubmit="return confirm('Cancelar esta requisição?');">
+    <form method="post" action="/paiol/movimentacoes/requisicoes/{{ req.id }}/cancelar" onsubmit="return confirm('Cancelar esta requisição?');">
       <button type="submit" class="btn-cancel">Cancelar requisição</button>
     </form>
     {% endif %}

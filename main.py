@@ -73,6 +73,14 @@ _CAD_TABLES = [
 if not IS_VERCEL or os.getenv("RUN_DB_MIGRATIONS") == "1":
     Base.metadata.create_all(bind=engine)
 
+    # Colunas novas em tabelas já existentes (create_all não altera schema)
+    try:
+        from services.paiol_cautela_service import _ensure_cautela_schema
+
+        _ensure_cautela_schema()
+    except Exception:
+        pass
+
     if os.getenv("SYNC_IBGE_ON_STARTUP", "1") == "1":
         from database import SessionLocal
         from services.ibge_service import IbgeSyncError, ensure_estados
@@ -89,6 +97,12 @@ else:
         Base.metadata.create_all(bind=engine, tables=_CAD_TABLES)
     except Exception:
         # Não derruba o app no cold start se o DB estiver temporariamente indisponível
+        pass
+    try:
+        from services.paiol_cautela_service import _ensure_cautela_schema
+
+        _ensure_cautela_schema()
+    except Exception:
         pass
 
 # ========================================

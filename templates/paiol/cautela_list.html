@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Cautela — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header("Cautela", "Registro de cautela de material bélico a servidores.", "/paiol/movimentacoes/cautela/add", "Nova cautela", "fa-clipboard-list", true, "/paiol/dashboard") }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Matrícula", 0, "Filtrar por matrícula...", "filter-matricula") }}
+  {{ mod.filter_text("Servidor", 1, "Filtrar por nome...", "filter-servidor") }}
+  {{ mod.filter_text("Armamento", 2, "Filtrar armamento...", "filter-armamento") }}
+  {{ mod.filter_text("Munição", 3, "Filtrar munição...", "filter-municao") }}
+  {{ mod.filter_checkbox_options("Cautela Fixa", 6, "cautela_fixa", ["Sim", "Não"], "Selecionar...") }}
+  {{ mod.filter_checkbox_options("Status", 7, "status", status_labels.values()|list, "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Cautelas registradas", "paiol-cautela-count") }}
+  {% if cautelas %}
+  <table id="paiolCautelaTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-status">Matrícula</th>
+        <th class="mod-col-main">Servidor</th>
+        <th>Armamento</th>
+        <th>Munição</th>
+        <th>Acessórios/EPI</th>
+        <th class="mod-col-status">Data e hora</th>
+        <th class="mod-col-status">Cautela Fixa</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in cautelas %}
+      {% set c = row.cautela %}
+      <tr>
+        <td data-search="{{ row.matricula }}"><strong>{{ row.matricula }}</strong></td>
+        <td data-search="{{ c.servidor.nome if c.servidor else '' }}"><strong>{{ c.servidor.nome if c.servidor else '—' }}</strong></td>
+        <td data-search="{{ row.resumo.armamento }}">{{ row.resumo.armamento }}</td>
+        <td data-search="{{ row.resumo.municao }}">{{ row.resumo.municao }}</td>
+        <td data-search="{{ row.resumo.acessorio_epi }}">{{ row.resumo.acessorio_epi }}</td>
+        <td data-order="{{ c.created_at.isoformat() if c.created_at else '' }}">{{ c.created_at.strftime('%d/%m/%Y %H:%M') if c.created_at else '—' }}</td>
+        <td data-search="{{ 'Sim' if c.cautela_fixa else 'Não' }}">
+          {% if c.cautela_fixa %}
+          <span class="mod-badge mod-status--ok">Sim</span>
+          {% else %}
+          <span class="mod-badge mod-status--info">Não</span>
+          {% endif %}
+        </td>
+        <td data-search="{{ status_labels.get(c.status, c.status) }}">
+          {% if c.status == 'ativa' %}
+          <span class="mod-badge mod-status--ok">{{ status_labels.get(c.status, c.status) }}</span>
+          {% elif c.status == 'pendente' %}
+          <span class="mod-badge mod-status--crit">{{ status_labels.get(c.status, c.status) }}</span>
+          {% else %}
+          <span class="mod-badge mod-status--info">{{ status_labels.get(c.status, c.status) }}</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="mod-actions">
+            {% if c.status != 'baixada' %}
+            <a href="/paiol/movimentacoes/cautela/edit/{{ c.id }}" class="mod-action-btn mod-action-btn--edit" title="Editar">
+              <i class="fas fa-pen"></i>
+            </a>
+            <form class="delete-form" data-id="{{ c.id }}" method="post" style="display:inline;">
+              <button type="submit" class="mod-action-btn mod-action-btn--delete" title="Excluir">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+            {% if c.status == 'ativa' %}
+            <form class="cautela-baixa-form" data-id="{{ c.id }}" method="post" style="display:inline;">
+              <button type="submit" class="mod-action-btn" title="Dar baixa" style="color:#0d6efd;">
+                <i class="fas fa-clipboard-check"></i>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhuma cautela registrada.", "/paiol/movimentacoes/cautela/add", "Nova cautela") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+{{ mod.init_datatable(
+  "paiolCautelaTable",
+  "paiol-cautela-count",
+  [[5, "desc"]],
+  [
+    {"targets": 0, "width": "8rem", "className": "mod-col-status"},
+    {"targets": 1, "className": "mod-col-main"},
+    {"targets": 5, "width": "9.5rem", "className": "mod-col-status"},
+    {"targets": 6, "width": "7.5rem", "className": "mod-col-status"},
+    {"targets": 7, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 8, "width": "7.5rem", "className": "mod-col-actions"}
+  ],
+  [
+    {"col": 0, "input": "#filter-matricula"},
+    {"col": 1, "input": "#filter-servidor"},
+    {"col": 2, "input": "#filter-armamento"},
+    {"col": 3, "input": "#filter-municao"}
+  ],
+  cautelas|length > 0
+) }}
+
+{% if cautelas %}
+<script>
+$(function () {
+  if (window.SIGENModList) {
+    SIGENModList.initDelete("/paiol/movimentacoes/cautela/delete/{id}", {
+      title: "Excluir cautela?",
+      text: "A cautela será removida permanentemente."
+    });
+  }
+  $(document).on("submit", ".cautela-baixa-form", function (e) {
+    e.preventDefault();
+    var form = $(this);
+    var id = form.data("id");
+    var confirmFn = window.SIGENAlert && window.SIGENAlert.confirmDanger
+      ? window.SIGENAlert.confirmDanger.bind(window.SIGENAlert)
+      : function (text, opts) {
+          return Swal.fire({
+            title: (opts && opts.title) || "Dar baixa na cautela?",
+            text: text,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Sim, dar baixa",
+            cancelButtonText: "Cancelar"
+          });
+        };
+    confirmFn("O equipamento será devolvido e a cautela encerrada.", {
+      title: "Dar baixa na cautela?"
+    }).then(function (result) {
+      if (!result.isConfirmed) return;
+      fetch("/paiol/movimentacoes/cautela/baixa/" + id, { method: "POST" })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) throw new Error(data.detail || "Não foi possível dar baixa.");
+          if (window.SIGENAlert) {
+            SIGENAlert.success("Cautela baixada com sucesso.").then(function () {
+              window.location.reload();
+            });
+          } else {
+            window.location.reload();
+          }
+        })
+        .catch(function (err) {
+          if (window.SIGENAlert) SIGENAlert.error(err.message);
+          else alert(err.message);
+        });
+    });
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -25,6 +25,8 @@ TABLES = [
     "paiol_requisicao_itens",
     "paiol_assinaturas",
     "paiol_movimentacoes",
+    "paiol_cautelas",
+    "paiol_cautela_itens",
 ]
 
 SEED_CLASSES = [
@@ -42,6 +44,22 @@ def create_tables():
     _ensure_movimentacao_requisicao_column()
     _ensure_tipo_material_detalhes_column()
     _ensure_municao_columns()
+    _ensure_users_matricula_column()
+
+
+def _ensure_users_matricula_column():
+    """Garante coluna matricula em users (necessária para cautela)."""
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    if "users" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("users")}
+    if "matricula" in cols:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN matricula VARCHAR(30)"))
+    print("Coluna users.matricula: OK")
 
 
 def _ensure_municao_columns():
@@ -63,6 +81,10 @@ def _ensure_municao_columns():
         alters.append("ADD COLUMN quantidade_tipo VARCHAR(20)")
     if "quantidade_valor" not in cols:
         alters.append("ADD COLUMN quantidade_valor INTEGER")
+    if "lote" not in cols:
+        alters.append("ADD COLUMN lote VARCHAR(80)")
+    if "validade" not in cols:
+        alters.append("ADD COLUMN validade DATE")
     with engine.begin() as conn:
         for stmt in alters:
             conn.execute(text(f"ALTER TABLE paiol_municoes {stmt}"))

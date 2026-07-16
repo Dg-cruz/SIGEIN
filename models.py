@@ -42,6 +42,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     nome = Column(String(200), nullable=False)  # ✅ nome completo
+    matricula = Column(String(30), nullable=True, index=True)
     cpf = Column(String(11), unique=True, nullable=False, index=True)  # ✅ só números
     email = Column(String(200), nullable=False, unique=True, index=True)
     password = Column(String(255), nullable=False)  # ✅ use bcrypt para hash
@@ -823,6 +824,8 @@ class PaiolMunicao(Base):
     fabricante_id = Column(Integer, ForeignKey("paiol_fabricantes.id"), nullable=True)
     quantidade_tipo = Column(String(20))
     quantidade_valor = Column(Integer)
+    lote = Column(String(80), nullable=True)
+    validade = Column(Date, nullable=True)
     descricao = Column(Text)
     ativo = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -1067,6 +1070,44 @@ class PaiolRequisicaoItem(Base):
 
     requisicao = relationship("PaiolRequisicao", back_populates="itens")
     material = relationship("PaiolMaterial")
+
+
+class PaiolCautela(Base):
+    """Cautela de material bélico a servidor."""
+    __tablename__ = "paiol_cautelas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    orgao_id = Column(Integer, ForeignKey("orgaos.id"), nullable=False, index=True)
+    municipio_id = Column(Integer, ForeignKey("municipios.id"), nullable=False)
+    servidor_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="ativa")
+    cautela_fixa = Column(Boolean, nullable=False, default=False)
+    observacao = Column(Text)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=_agora_brasilia)
+    updated_at = Column(DateTime, onupdate=_agora_brasilia)
+    baixada_em = Column(DateTime, nullable=True)
+    baixada_por = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    servidor = relationship("User", foreign_keys=[servidor_id])
+    criador = relationship("User", foreign_keys=[created_by])
+    baixada_por_user = relationship("User", foreign_keys=[baixada_por])
+    itens = relationship("PaiolCautelaItem", back_populates="cautela", cascade="all, delete-orphan")
+
+
+class PaiolCautelaItem(Base):
+    """Equipamento vinculado a uma cautela."""
+    __tablename__ = "paiol_cautela_itens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cautela_id = Column(Integer, ForeignKey("paiol_cautelas.id"), nullable=False, index=True)
+    categoria = Column(String(40), nullable=False)
+    origem_tipo = Column(String(20), nullable=False)
+    origem_id = Column(Integer, nullable=False)
+    descricao = Column(String(300), nullable=False)
+    quantidade = Column(Integer, nullable=True)
+
+    cautela = relationship("PaiolCautela", back_populates="itens")
 
 
 class PaiolAssinatura(Base):

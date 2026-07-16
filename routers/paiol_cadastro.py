@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 import re
 
@@ -32,10 +33,41 @@ from paiol_constants import (
     CATEGORIA_TIPO_PREFIX,
     MUNICAO_QUANTIDADE_TIPOS,
     TIPO_MATERIAL_LABELS,
+    TipoMaterialPaiol,
     material_list_url,
 )
 
 _CATEGORIAS_VALIDAS = {c.value for c in CategoriaTipoMaterial}
+_municao_schema_ready = False
+
+
+def _ensure_municao_columns() -> None:
+    """Garante colunas lote/validade em bancos já existentes."""
+    global _municao_schema_ready
+    if _municao_schema_ready:
+        return
+    try:
+        from sqlalchemy import inspect, text
+        from database import engine
+
+        insp = inspect(engine)
+        if "paiol_municoes" not in insp.get_table_names():
+            _municao_schema_ready = True
+            return
+        cols = {c["name"] for c in insp.get_columns("paiol_municoes")}
+        alters = []
+        if "lote" not in cols:
+            alters.append("ADD COLUMN lote VARCHAR(80)")
+        if "validade" not in cols:
+            alters.append("ADD COLUMN validade DATE")
+        if alters:
+            with engine.begin() as conn:
+                for stmt in alters:
+                    conn.execute(text(f"ALTER TABLE paiol_municoes {stmt}"))
+        _municao_schema_ready = True
+    except Exception:
+        pass
+
 
 
 def _extrair_campos_tipo(categoria: str, data: dict) -> tuple[str | None, dict | None, str | None]:
@@ -126,6 +158,8 @@ def _parse_municao_payload(data: dict) -> tuple[dict | None, str | None]:
     nome = (data.get("nome_comercial") or "").strip()
     calibre = (data.get("calibre") or "").strip()
     fabricante = (data.get("fabricante_marca") or "").strip()
+    lote = (data.get("lote") or "").strip()
+    validade_raw = (data.get("validade") or "").strip()
     q_tipo = (data.get("quantidade_tipo") or "").strip().lower()
     q_valor_raw = data.get("quantidade_valor")
     tipos_validos = {t[0] for t in MUNICAO_QUANTIDADE_TIPOS}
@@ -136,8 +170,16 @@ def _parse_municao_payload(data: dict) -> tuple[dict | None, str | None]:
         return None, "Informe o calibre."
     if not fabricante:
         return None, "Selecione o fabricante / marca."
+    if not lote:
+        return None, "Informe o lote."
+    if not validade_raw:
+        return None, "Informe a validade."
+    try:
+        validade = date.fromisoformat(validade_raw[:10])
+    except ValueError:
+        return None, "Informe a validade no formato AAAA-MM-DD."
     if q_tipo not in tipos_validos:
-        return None, "Selecione o tipo de quantidade (Unidade, Caixa ou Lote)."
+        return None, "Selecione o tipo de quantidade (Unidade ou Caixa)."
     try:
         q_valor = int(q_valor_raw)
     except (TypeError, ValueError):
@@ -149,6 +191,8 @@ def _parse_municao_payload(data: dict) -> tuple[dict | None, str | None]:
         "nome_comercial": nome,
         "calibre": calibre,
         "fabricante_marca": fabricante,
+        "lote": lote[:80],
+        "validade": validade,
         "quantidade_tipo": q_tipo,
         "quantidade_valor": q_valor,
     }, None
@@ -261,16 +305,52 @@ async def tipo_material_api_create(
     descricao = (data.get("descricao") or "").strip() or None
     if categoria not in _CATEGORIAS_VALIDAS:
         return JSONResponse({"ok": False, "detail": "Categoria inválida."}, status_code=400)
+
+    # Armamentos e munições vão para as tabelas das telas específicas
+    if categoria == CategoriaTipoMaterial.ARMAMENTO.value:
+        ctx = user_context(db, user)
+        dados, erro = _parse_armamento_payload(data)
+        if erro:
+            return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+        item, erro = _criar_armamento(db, ctx, dados)
+        if erro:
+            return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+        db.commit()
+        db.refresh(item)
+        log_paiol(db, user, request, f"Cadastrou armamento {item.nome} ({item.codigo})")
+        return JSONResponse({"ok": True, "id": item.id, "redirect": "/paiol/cadastro/materiais-belicos"})
+
+    if categoria == CategoriaTipoMaterial.MUNICOES_EXPLOSIVOS.value:
+        _ensure_municao_columns()
+        dados, erro = _parse_municao_payload(data)
+        if erro:
+            return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+        erro_fab = _aplicar_fabricante_municao(db, dados)
+        if erro_fab:
+            return JSONResponse({"ok": False, "detail": erro_fab}, status_code=400)
+        item = PaiolMunicao(
+            codigo=_gerar_codigo_municao(db, dados["nome_comercial"]),
+            nome_comercial=dados["nome_comercial"],
+            calibre=dados["calibre"],
+            fabricante_marca=dados.get("fabricante_marca"),
+            fabricante_id=dados.get("fabricante_id"),
+            quantidade_tipo=dados.get("quantidade_tipo"),
+            quantidade_valor=dados.get("quantidade_valor"),
+            lote=dados.get("lote"),
+            validade=dados.get("validade"),
+            descricao=dados.get("descricao"),
+        )
+        db.add(item)
+        db.commit()
+        db.refresh(item)
+        log_paiol(db, user, request, f"Cadastrou munição {item.nome_comercial} ({item.codigo})")
+        return JSONResponse({"ok": True, "id": item.id, "redirect": "/paiol/cadastro/municoes"})
+
     especie, detalhes, erro = _extrair_campos_tipo(categoria, data)
     if erro:
         return JSONResponse({"ok": False, "detail": erro}, status_code=400)
-    if categoria == CategoriaTipoMaterial.ARMAMENTO.value:
-        erro_opcoes = _validar_opcoes_armamento(db, detalhes)
-        if erro_opcoes:
-            return JSONResponse({"ok": False, "detail": erro_opcoes}, status_code=400)
     if _tipo_duplicado(db, categoria, especie, detalhes):
-        msg = "Já existe um armamento com este número de série." if categoria == CategoriaTipoMaterial.ARMAMENTO.value else "Já existe um tipo com esta categoria e espécie."
-        return JSONResponse({"ok": False, "detail": msg}, status_code=400)
+        return JSONResponse({"ok": False, "detail": "Já existe um tipo com esta categoria e espécie."}, status_code=400)
     item = PaiolTipoMaterial(
         codigo=_gerar_codigo_tipo(db, categoria, especie, detalhes),
         categoria=categoria,
@@ -474,6 +554,7 @@ def municao_api_get(
 ):
     if r := _api_auth(user):
         return r
+    _ensure_municao_columns()
     item = db.query(PaiolMunicao).get(item_id)
     if not item:
         return JSONResponse({"ok": False, "detail": "Registro não encontrado."}, status_code=404)
@@ -486,6 +567,8 @@ def municao_api_get(
                 "nome_comercial": item.nome_comercial,
                 "calibre": item.calibre,
                 "fabricante_marca": item.fabricante_marca or "",
+                "lote": item.lote or "",
+                "validade": item.validade.isoformat() if item.validade else "",
                 "quantidade_tipo": item.quantidade_tipo or "",
                 "quantidade_valor": item.quantidade_valor or "",
                 "ativo": item.ativo,
@@ -502,6 +585,7 @@ async def municao_api_create(
 ):
     if r := _api_auth(user):
         return r
+    _ensure_municao_columns()
     data = await request.json()
     dados, erro = _parse_municao_payload(data)
     if erro:
@@ -514,6 +598,8 @@ async def municao_api_create(
         calibre=dados["calibre"],
         fabricante_marca=dados["fabricante_marca"],
         fabricante_id=dados.get("fabricante_id"),
+        lote=dados["lote"],
+        validade=dados["validade"],
         quantidade_tipo=dados["quantidade_tipo"],
         quantidade_valor=dados["quantidade_valor"],
     )
@@ -533,6 +619,7 @@ async def municao_api_update(
 ):
     if r := _api_auth(user):
         return r
+    _ensure_municao_columns()
     item = db.query(PaiolMunicao).get(item_id)
     if not item:
         return JSONResponse({"ok": False, "detail": "Registro não encontrado."}, status_code=404)
@@ -548,11 +635,275 @@ async def municao_api_update(
     item.calibre = dados["calibre"]
     item.fabricante_marca = dados["fabricante_marca"]
     item.fabricante_id = dados.get("fabricante_id")
+    item.lote = dados["lote"]
+    item.validade = dados["validade"]
     item.quantidade_tipo = dados["quantidade_tipo"]
     item.quantidade_valor = dados["quantidade_valor"]
     item.ativo = bool(data.get("ativo", True))
     db.commit()
     log_paiol(db, user, request, f"Editou munição {item.nome_comercial} (ID {item_id})")
+    return JSONResponse({"ok": True})
+
+
+# ── Armamentos (bridge a partir de Tipos de materiais) ─────
+
+_ARMAMENTO_ESPECIES = ("Pistola", "Revólver", "Espingarda", "Carabina", "Rifle")
+
+
+def _serie_from_descricao(descricao: str | None) -> str:
+    if not descricao:
+        return ""
+    if descricao.startswith("Série: "):
+        return descricao.replace("Série: ", "", 1).strip()
+    return ""
+
+
+def _parse_nome_armamento(nome: str | None) -> tuple[str, str]:
+    nome = (nome or "").strip()
+    if not nome:
+        return "", ""
+    for especie in _ARMAMENTO_ESPECIES:
+        if nome == especie:
+            return especie, ""
+        prefix = especie + " "
+        if nome.startswith(prefix):
+            return especie, nome[len(prefix):].strip()
+    parts = nome.split(" ", 1)
+    return parts[0], (parts[1] if len(parts) > 1 else "")
+
+
+def armamento_view(item: PaiolMaterial) -> dict:
+    especie, modelo = _parse_nome_armamento(item.nome)
+    return {
+        "id": item.id,
+        "codigo": item.codigo,
+        "especie": especie,
+        "modelo": modelo,
+        "marca_fabricante": item.fabricante.nome if item.fabricante else "",
+        "numero_serie": _serie_from_descricao(item.descricao),
+        "calibre": item.calibre or "",
+        "ativo": item.ativo,
+    }
+
+
+def _criar_armamento(db: Session, ctx: dict, dados: dict) -> tuple[PaiolMaterial | None, str | None]:
+    fab = (
+        db.query(PaiolFabricante)
+        .filter(PaiolFabricante.nome == dados["marca_fabricante"], PaiolFabricante.ativo == True)
+        .first()
+    )
+    if not fab:
+        return None, "Selecione um fabricante cadastrado em Fabricantes."
+    mun = (
+        db.query(PaiolMunicao)
+        .filter(PaiolMunicao.calibre == dados["calibre"], PaiolMunicao.ativo == True)
+        .first()
+    )
+    if not mun:
+        return None, "Selecione um calibre cadastrado em Munições e Químicos."
+    if _serie_armamento_duplicada(db, dados["numero_serie"]):
+        return None, "Já existe um armamento com este número de série."
+
+    item = PaiolMaterial(
+        codigo=_gerar_codigo_armamento(db, dados["numero_serie"]),
+        nome=f"{dados['especie']} {dados['modelo']}".strip(),
+        tipo=TipoMaterialPaiol.ARMA.value,
+        descricao=f"Série: {dados['numero_serie']}",
+        calibre=dados["calibre"],
+        fabricante_id=fab.id,
+        municipio_id=ctx["municipio_id"],
+        orgao_id=ctx["orgao_id"],
+        controla_por_serie=True,
+        controla_lote=False,
+        quantidade_minima=0,
+        created_by=ctx["user_id"],
+    )
+    db.add(item)
+    db.flush()
+    return item, None
+
+
+def migrar_tipos_armamento_para_materiais(db: Session, ctx: dict) -> int:
+    """Converte registros antigos de tipos (categoria armamento) em PaiolMaterial."""
+    tipos = (
+        db.query(PaiolTipoMaterial)
+        .filter(PaiolTipoMaterial.categoria == CategoriaTipoMaterial.ARMAMENTO.value)
+        .all()
+    )
+    migrados = 0
+    for tipo in tipos:
+        detalhes = tipo.detalhes or {}
+        dados = {
+            "especie": (tipo.especie or "").strip(),
+            "marca_fabricante": (detalhes.get("marca_fabricante") or "").strip(),
+            "modelo": (detalhes.get("modelo") or "").strip(),
+            "numero_serie": (detalhes.get("numero_serie") or "").strip(),
+            "calibre": (detalhes.get("calibre") or "").strip(),
+        }
+        if not all(dados.values()):
+            continue
+        if _serie_armamento_duplicada(db, dados["numero_serie"]):
+            db.delete(tipo)
+            migrados += 1
+            continue
+        # fabricante por id legado, se nome não bater
+        if not dados["marca_fabricante"] and detalhes.get("fabricante_id"):
+            fab = db.query(PaiolFabricante).filter(PaiolFabricante.id == detalhes["fabricante_id"]).first()
+            if fab:
+                dados["marca_fabricante"] = fab.nome
+        item, erro = _criar_armamento(db, ctx, dados)
+        if erro or not item:
+            continue
+        if tipo.ativo is False:
+            item.ativo = False
+        db.delete(tipo)
+        migrados += 1
+    if migrados:
+        db.commit()
+    return migrados
+
+
+def _parse_armamento_payload(data: dict) -> tuple[dict | None, str | None]:
+    especie = (data.get("especie") or "").strip()
+    marca = (data.get("marca_fabricante") or "").strip()
+    modelo = (data.get("modelo") or "").strip()
+    serie = (data.get("numero_serie") or "").strip()
+    calibre = (data.get("calibre") or "").strip()
+    if not especie:
+        return None, "Informe a espécie."
+    if not marca:
+        return None, "Selecione a marca / fabricante."
+    if not modelo:
+        return None, "Informe o modelo."
+    if not serie:
+        return None, "Informe o número de série."
+    if not calibre:
+        return None, "Selecione o calibre."
+    return {
+        "especie": especie,
+        "marca_fabricante": marca,
+        "modelo": modelo,
+        "numero_serie": serie,
+        "calibre": calibre,
+    }, None
+
+
+def _gerar_codigo_armamento(db: Session, numero_serie: str) -> str:
+    slug = re.sub(r"[^A-Z0-9]+", "-", numero_serie.strip().upper()).strip("-")[:20] or "SERIE"
+    base = f"ARM-{slug}"
+    codigo = base
+    n = 1
+    while db.query(PaiolMaterial).filter(PaiolMaterial.codigo == codigo).first():
+        codigo = f"{base}-{n}"
+        n += 1
+    return codigo
+
+
+def _serie_armamento_duplicada(db: Session, numero_serie: str, exclude_id: int | None = None) -> bool:
+    serie = (numero_serie or "").strip()
+    if not serie:
+        return False
+    query = db.query(PaiolMaterial).filter(PaiolMaterial.tipo == TipoMaterialPaiol.ARMA.value)
+    if exclude_id is not None:
+        query = query.filter(PaiolMaterial.id != exclude_id)
+    for row in query.all():
+        desc = row.descricao or ""
+        if f"Série: {serie}" == desc or desc.endswith(f"Série: {serie}"):
+            return True
+        if row.codigo and serie.upper().replace("-", "") in (row.codigo or "").upper().replace("-", ""):
+            # também considera código gerado a partir da série
+            slug = re.sub(r"[^A-Z0-9]+", "", serie.upper())
+            cod_slug = re.sub(r"[^A-Z0-9]+", "", (row.codigo or "").upper())
+            if slug and slug in cod_slug:
+                return True
+    return False
+
+
+@router.get("/armamentos/api/{item_id}")
+def armamento_api_get(
+    item_id: int,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    item = db.query(PaiolMaterial).filter(
+        PaiolMaterial.id == item_id,
+        PaiolMaterial.tipo == TipoMaterialPaiol.ARMA.value,
+    ).first()
+    if not item:
+        return JSONResponse({"ok": False, "detail": "Registro não encontrado."}, status_code=404)
+    return JSONResponse({"ok": True, "item": armamento_view(item)})
+
+
+@router.post("/armamentos/api")
+async def armamento_api_create(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    ctx = user_context(db, user)
+    data = await request.json()
+    dados, erro = _parse_armamento_payload(data)
+    if erro:
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    item, erro = _criar_armamento(db, ctx, dados)
+    if erro:
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    db.commit()
+    db.refresh(item)
+    log_paiol(db, user, request, f"Cadastrou armamento {item.nome} ({item.codigo})")
+    return JSONResponse({"ok": True, "id": item.id})
+
+
+@router.post("/armamentos/api/{item_id}")
+async def armamento_api_update(
+    item_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if r := _api_auth(user):
+        return r
+    item = db.query(PaiolMaterial).filter(
+        PaiolMaterial.id == item_id,
+        PaiolMaterial.tipo == TipoMaterialPaiol.ARMA.value,
+    ).first()
+    if not item:
+        return JSONResponse({"ok": False, "detail": "Registro não encontrado."}, status_code=404)
+    data = await request.json()
+    dados, erro = _parse_armamento_payload(data)
+    if erro:
+        return JSONResponse({"ok": False, "detail": erro}, status_code=400)
+    fab = (
+        db.query(PaiolFabricante)
+        .filter(PaiolFabricante.nome == dados["marca_fabricante"], PaiolFabricante.ativo == True)
+        .first()
+    )
+    if not fab:
+        return JSONResponse({"ok": False, "detail": "Selecione um fabricante cadastrado em Fabricantes."}, status_code=400)
+    mun = (
+        db.query(PaiolMunicao)
+        .filter(PaiolMunicao.calibre == dados["calibre"], PaiolMunicao.ativo == True)
+        .first()
+    )
+    if not mun:
+        return JSONResponse({"ok": False, "detail": "Selecione um calibre cadastrado em Munições e Químicos."}, status_code=400)
+    if _serie_armamento_duplicada(db, dados["numero_serie"], exclude_id=item_id):
+        return JSONResponse({"ok": False, "detail": "Já existe um armamento com este número de série."}, status_code=400)
+
+    serie_antiga = _serie_from_descricao(item.descricao)
+    if serie_antiga != dados["numero_serie"]:
+        item.codigo = _gerar_codigo_armamento(db, dados["numero_serie"])
+    item.nome = f"{dados['especie']} {dados['modelo']}".strip()
+    item.descricao = f"Série: {dados['numero_serie']}"
+    item.calibre = dados["calibre"]
+    item.fabricante_id = fab.id
+    item.ativo = bool(data.get("ativo", True))
+    db.commit()
+    log_paiol(db, user, request, f"Editou armamento {item.nome} (ID {item_id})")
     return JSONResponse({"ok": True})
 
 

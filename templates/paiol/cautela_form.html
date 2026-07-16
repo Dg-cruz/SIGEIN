@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+{% set hide_app_header = True %}
+{% block title %}{% if is_edit %}Editar cautela{% else %}Nova cautela{% endif %} — Paiol{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
+<link rel="stylesheet" href="/static/css/modules-list.css">
+<style>
+  .cautela-servidor-wrap { position: relative; }
+  .cautela-servidor-list {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+    background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15,23,42,.12); max-height: 240px; overflow: auto; display: none;
+  }
+  .cautela-servidor-list.is-open { display: block; }
+  .cautela-servidor-opt {
+    display: block; width: 100%; text-align: left; border: 0; background: transparent;
+    padding: 0.55rem 0.75rem; cursor: pointer; font-size: 0.88rem;
+    color: #0f172a; font-weight: 600; transform: none;
+  }
+  .cautela-servidor-opt:hover, .cautela-servidor-opt.is-active {
+    background: #eff6ff; color: #0f172a; transform: none;
+  }
+  .cautela-servidor-opt small { display: block; color: #64748b; margin-top: 0.1rem; font-weight: 500; }
+  .cautela-radio-group {
+    display: flex; flex-wrap: wrap; gap: 0.85rem 1.25rem; align-items: center;
+    min-height: 38px;
+  }
+  .cautela-radio-opt {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 14px; font-weight: 500; color: #334155; cursor: pointer;
+  }
+  .form-row--status-fixa { align-items: start; }
+  .form-row--status-fixa > .form-group > label:first-child {
+    margin-bottom: 5px;
+    min-height: 1.2rem;
+  }
+  .cautela-equip-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.75rem; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .cautela-equip-head p {
+    margin: 0.2rem 0 0; color: #6c757d; font-size: 13px;
+  }
+  .cautela-equip-panel.is-disabled { opacity: 0.55; pointer-events: none; }
+  .cautela-equip-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; min-height: 2rem; }
+  .cautela-chip {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    background: #e0f2fe; color: #0c4a6e; border-radius: 999px;
+    padding: 0.25rem 0.55rem; font-size: 0.8rem;
+  }
+  .cautela-chip button {
+    border: 0; background: transparent; color: #0369a1; cursor: pointer;
+    font-size: 0.95rem; line-height: 1;
+  }
+  .btn-add-equip {
+    background: #28a745; color: #fff; border: none; padding: 10px 20px;
+    border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;
+    transform: none;
+  }
+  .btn-add-equip:hover { background: #218838; transform: none; }
+  #modal-equipamento .cautela-tabs {
+    display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;
+  }
+  #modal-equipamento .cautela-tab {
+    border: 1px solid #94a3b8; background: #fff; border-radius: 6px;
+    padding: 0.4rem 0.75rem; font-size: 0.84rem; font-weight: 600;
+    cursor: pointer; color: #1e293b;
+  }
+  #modal-equipamento .cautela-tab i { color: #475569; }
+  #modal-equipamento .cautela-tab:hover {
+    background: #f1f5f9; border-color: #64748b; color: #0f172a;
+  }
+  #modal-equipamento .cautela-tab.is-active {
+    background: #0d6efd; border-color: #0d6efd; color: #fff;
+  }
+  #modal-equipamento .cautela-tab.is-active i { color: #fff; }
+  #modal-equipamento .cautela-equip-list { max-height: 320px; overflow: auto; }
+  #modal-equipamento .cautela-equip-item {
+    display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.55rem 0.15rem;
+    border-bottom: 1px solid #f1f5f9; font-size: 0.86rem;
+  }
+  #modal-equipamento .cautela-equip-item__body { flex: 1; min-width: 0; }
+  #modal-equipamento .cautela-qtd-wrap {
+    display: none; margin-top: 0.45rem; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  }
+  #modal-equipamento .cautela-qtd-wrap.is-visible { display: flex; }
+  #modal-equipamento .cautela-qtd-wrap label {
+    font-size: 0.78rem; font-weight: 600; color: #004080; margin: 0;
+  }
+  #modal-equipamento .cautela-qtd-wrap input {
+    width: 5.5rem; padding: 0.3rem 0.45rem; font-size: 0.84rem;
+    border: 1px solid #cbd5e1; border-radius: 6px;
+  }
+  #modal-equipamento .cautela-qtd-hint { font-size: 0.75rem; color: #64748b; }
+  #modal-equipamento .cautela-qtd-error {
+    width: 100%; font-size: 0.75rem; color: #b91c1c; display: none;
+  }
+</style>
+
+<div class="container">
+  <h2>{% if is_edit %}Editar cautela{% else %}Nova cautela{% endif %}</h2>
+
+  {% if error %}<div class="form-error">{{ error }}</div>{% endif %}
+
+  <form method="post"
+        action="{% if is_edit %}/paiol/movimentacoes/cautela/edit/{{ cautela.id }}{% else %}/paiol/movimentacoes/cautela/add{% endif %}"
+        id="cautela-form">
+
+    <fieldset>
+      <legend>Dados da cautela</legend>
+      <div class="form-row form-row--status-fixa">
+        <div class="form-group cautela-servidor-wrap">
+          <label for="servidor-busca">Servidor*</label>
+          <input type="hidden" name="servidor_id" id="servidor_id" value="{{ form_data.servidor_id if form_data else '' }}" required>
+          <input type="text" id="servidor-busca" placeholder="Buscar por nome ou matrícula..." autocomplete="off"
+                 value="{% if form_data and form_data.servidor_nome %}{{ form_data.servidor_nome }} — {{ form_data.servidor_matricula }}{% endif %}">
+          <div class="cautela-servidor-list" id="servidor-list"></div>
+        </div>
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select name="status" id="status">
+            {% for key, label in status_labels.items() %}
+            {% if key != 'baixada' %}
+            <option value="{{ key }}" {% if form_data and form_data.status == key %}selected{% elif not form_data and key == 'ativa' %}selected{% endif %}>{{ label }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cautela Fixa*</label>
+          {% set fixa_sim = form_data and form_data.cautela_fixa %}
+          <div class="cautela-radio-group">
+            <label class="cautela-radio-opt">
+              <input type="radio" name="cautela_fixa" value="sim" {% if fixa_sim %}checked{% endif %} required>
+              Sim
+            </label>
+            <label class="cautela-radio-opt">
+              <input type="radio" name="cautela_fixa" value="nao" {% if not fixa_sim %}checked{% endif %} required>
+              Não
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="observacao">Observações</label>
+          <textarea id="observacao" name="observacao" rows="3">{{ form_data.observacao if form_data else '' }}</textarea>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="cautela-equip-panel{% if not form_data or not form_data.servidor_id %} is-disabled{% endif %}" id="equip-panel">
+      <legend>Equipamentos</legend>
+      <div class="cautela-equip-head">
+        <p>Selecione armamentos, munições e acessórios cautelados ao servidor.</p>
+        <button type="button" class="btn-add-equip" id="btn-selecionar-equipamento">
+          <i class="fas fa-toolbox"></i> Selecionar equipamento
+        </button>
+      </div>
+      <div class="cautela-equip-chips" id="equip-chips"></div>
+    </fieldset>
+
+    <input type="hidden" name="itens_json" id="itens_json" value="">
+    <div class="buttons">
+      <button type="submit" class="btn-submit">{% if is_edit %}Salvar{% else %}Registrar cautela{% endif %}</button>
+      <a href="/paiol/movimentacoes/cautela" class="btn-cancel">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<div id="modal-equipamento" class="mod-modal" aria-hidden="true">
+  <div class="mod-modal__backdrop" data-close="modal-equipamento"></div>
+  <div class="mod-modal__dialog mod-modal__dialog--lg" role="dialog" aria-labelledby="modal-equip-title">
+    <div class="mod-modal__header">
+      <h3 id="modal-equip-title">Selecionar equipamento</h3>
+      <button type="button" class="mod-modal__close" data-close="modal-equipamento" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="mod-modal__body">
+      <div class="cautela-tabs" id="equip-tabs">
+        {% for aba in abas_equipamento %}
+        <button type="button" class="cautela-tab{% if loop.first %} is-active{% endif %}" data-categoria="{{ aba.key }}">
+          <i class="fas {{ aba.icon }}"></i> {{ aba.label }}
+        </button>
+        {% endfor %}
+      </div>
+      <div class="form-group">
+        <label for="equip-busca">Buscar equipamento</label>
+        <input type="text" id="equip-busca" placeholder="Digite para filtrar..." autocomplete="off">
+      </div>
+      <div class="cautela-equip-list" id="equip-list"></div>
+    </div>
+    <div class="mod-modal__footer">
+      <button type="button" class="btn-submit" data-close="modal-equipamento">Confirmar seleção</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var ABAS = {{ abas_equipamento|tojson }};
+  var initialItens = {{ (form_data.itens if form_data else [])|tojson }};
+  var cautelaId = {{ cautela.id if cautela else 'null' }};
+  var servidorInput = document.getElementById("servidor-busca");
+  var servidorIdInput = document.getElementById("servidor_id");
+  var servidorList = document.getElementById("servidor-list");
+  var equipPanel = document.getElementById("equip-panel");
+  var equipChips = document.getElementById("equip-chips");
+  var itensJsonInput = document.getElementById("itens_json");
+  var modal = document.getElementById("modal-equipamento");
+  var equipList = document.getElementById("equip-list");
+  var equipBusca = document.getElementById("equip-busca");
+  var categoriaAtiva = ABAS.length ? ABAS[0].key : "armamento";
+  var selecionados = {};
+  var buscaTimer = null;
+
+  function itemKey(item) {
+    var origemId = item.origem_id != null ? item.origem_id : item.id;
+    return item.categoria + ":" + item.origem_tipo + ":" + String(origemId);
+  }
+
+  function syncItensInput() {
+    itensJsonInput.value = JSON.stringify(Object.values(selecionados));
+  }
+
+  function chipLabel(item) {
+    if (item.categoria === "municao" && item.quantidade) {
+      return item.descricao + " × " + item.quantidade;
+    }
+    return item.descricao;
+  }
+
+  function renderChips() {
+    equipChips.innerHTML = "";
+    Object.values(selecionados).forEach(function (item) {
+      var chip = document.createElement("span");
+      chip.className = "cautela-chip";
+      chip.innerHTML = chipLabel(item) + ' <button type="button" title="Remover" data-key="' + itemKey(item) + '">&times;</button>';
+      equipChips.appendChild(chip);
+    });
+    equipChips.querySelectorAll("button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        delete selecionados[btn.getAttribute("data-key")];
+        syncItensInput();
+        renderChips();
+        renderEquipList();
+      });
+    });
+    syncItensInput();
+  }
+
+  function openModal() {
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("mod-modal-open");
+    loadEquipamentos();
+  }
+
+  function closeModal() {
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.documentElement.classList.remove("mod-modal-open");
+  }
+
+  function setServidor(servidor) {
+    servidorIdInput.value = servidor.id;
+    var nome = (servidor.nome || "").trim() || "Sem nome";
+    var mat = (servidor.matricula || "").trim() || "—";
+    servidorInput.value = nome + " — " + mat;
+    servidorList.classList.remove("is-open");
+    equipPanel.classList.remove("is-disabled");
+  }
+
+  function buscarServidores(termo) {
+    fetch("/paiol/movimentacoes/cautela/api/servidores?q=" + encodeURIComponent(termo || ""))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) return;
+        servidorList.innerHTML = "";
+        if (!data.items.length) {
+          servidorList.innerHTML = '<div style="padding:0.65rem 0.75rem;color:#64748b;font-size:0.84rem;">Nenhum servidor encontrado.</div>';
+        } else {
+          data.items.forEach(function (s) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "cautela-servidor-opt";
+            var nome = (s.nome || "").trim() || "Sem nome";
+            var mat = (s.matricula || "").trim() || "—";
+            btn.innerHTML = nome + "<small>Matrícula: " + mat + "</small>";
+            btn.addEventListener("click", function () { setServidor(s); });
+            servidorList.appendChild(btn);
+          });
+        }
+        servidorList.classList.add("is-open");
+      });
+  }
+
+  function upsertSelecionado(item, quantidade) {
+    var key = itemKey(item);
+    var entry = {
+      categoria: item.categoria,
+      origem_tipo: item.origem_tipo,
+      origem_id: item.id != null ? item.id : item.origem_id,
+      descricao: item.label || item.descricao
+    };
+    if (item.exige_quantidade || item.categoria === "municao" || item.origem_tipo === "municao") {
+      entry.quantidade = quantidade;
+      entry.quantidade_disponivel = item.quantidade_disponivel;
+    }
+    selecionados[key] = entry;
+    syncItensInput();
+    renderChips();
+  }
+
+  function validarQtdInput(input, maxDisp) {
+    var err = input.parentNode.querySelector(".cautela-qtd-error");
+    var val = parseInt(input.value, 10);
+    if (!input.value || isNaN(val) || val < 1) {
+      if (err) {
+        err.textContent = "Informe uma quantidade válida.";
+        err.style.display = "block";
+      }
+      return false;
+    }
+    if (val > maxDisp) {
+      if (err) {
+        err.textContent = "Quantidade não pode ser maior que " + maxDisp + ".";
+        err.style.display = "block";
+      }
+      input.value = String(maxDisp);
+      return false;
+    }
+    if (err) err.style.display = "none";
+    return true;
+  }
+
+  function renderEquipList() {
+    equipList.innerHTML = "";
+    var items = equipList._items || [];
+    if (!items.length) {
+      equipList.innerHTML = '<div style="padding:0.75rem 0;color:#64748b;">Nenhum equipamento encontrado.</div>';
+      return;
+    }
+    items.forEach(function (item) {
+      var key = itemKey(item);
+      var selected = selecionados[key];
+      var isMunicao = !!item.exige_quantidade || item.categoria === "municao";
+      var maxDisp = item.quantidade_disponivel != null ? item.quantidade_disponivel : 0;
+      var row = document.createElement("div");
+      row.className = "cautela-equip-item";
+
+      var checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = !!selected;
+      checkbox.disabled = !selected && isMunicao && maxDisp < 1;
+      checkbox.setAttribute("data-key", key);
+
+      var body = document.createElement("div");
+      body.className = "cautela-equip-item__body";
+      var meta = "";
+      if (item.codigo) meta += "<br><small style='color:#64748b'>" + item.codigo + "</small>";
+      if (isMunicao) {
+        meta += "<br><small style='color:#64748b'>Disponível: " + maxDisp +
+          " de " + (item.quantidade_cadastrada || 0) +
+          (item.quantidade_tipo ? " (" + item.quantidade_tipo + ")" : "") +
+          "</small>";
+      }
+      body.innerHTML = "<strong>" + item.label + "</strong>" + meta;
+
+      if (isMunicao) {
+        var qtdWrap = document.createElement("div");
+        qtdWrap.className = "cautela-qtd-wrap" + (selected ? " is-visible" : "");
+        var qtdVal = selected && selected.quantidade ? selected.quantidade : "";
+        qtdWrap.innerHTML =
+          '<label>Quantidade</label>' +
+          '<input type="number" min="1" max="' + maxDisp + '" step="1" value="' + qtdVal + '" ' +
+            (maxDisp < 1 ? "disabled " : "") + '>' +
+          '<span class="cautela-qtd-hint">máx. ' + maxDisp + '</span>' +
+          '<span class="cautela-qtd-error"></span>';
+        var qtdInput = qtdWrap.querySelector("input");
+        qtdInput.addEventListener("click", function (e) { e.stopPropagation(); });
+        qtdInput.addEventListener("input", function () {
+          if (!checkbox.checked) return;
+          if (!validarQtdInput(qtdInput, maxDisp)) {
+            if (parseInt(qtdInput.value, 10) > maxDisp) {
+              upsertSelecionado(item, maxDisp);
+            }
+            return;
+          }
+          upsertSelecionado(item, parseInt(qtdInput.value, 10));
+        });
+        body.appendChild(qtdWrap);
+      }
+
+      checkbox.addEventListener("change", function () {
+        if (checkbox.checked) {
+          if (isMunicao) {
+            if (maxDisp < 1) {
+              checkbox.checked = false;
+              if (window.SIGENAlert) SIGENAlert.warning("Não há saldo disponível para esta munição.");
+              else alert("Não há saldo disponível para esta munição.");
+              return;
+            }
+            var wrap = body.querySelector(".cautela-qtd-wrap");
+            if (wrap) wrap.classList.add("is-visible");
+            var qIn = body.querySelector(".cautela-qtd-wrap input");
+            var qtd = qIn && qIn.value ? parseInt(qIn.value, 10) : 1;
+            if (isNaN(qtd) || qtd < 1) qtd = 1;
+            if (qtd > maxDisp) qtd = maxDisp;
+            if (qIn) qIn.value = String(qtd);
+            upsertSelecionado(item, qtd);
+          } else {
+            upsertSelecionado(item);
+          }
+        } else {
+          delete selecionados[key];
+          syncItensInput();
+          renderChips();
+          var wrapOff = body.querySelector(".cautela-qtd-wrap");
+          if (wrapOff) wrapOff.classList.remove("is-visible");
+        }
+      });
+
+      row.appendChild(checkbox);
+      row.appendChild(body);
+      equipList.appendChild(row);
+    });
+  }
+
+  function loadEquipamentos() {
+    var q = equipBusca.value || "";
+    var url = "/paiol/movimentacoes/cautela/api/equipamentos?categoria=" +
+      encodeURIComponent(categoriaAtiva) + "&q=" + encodeURIComponent(q);
+    if (cautelaId) url += "&cautela_id=" + encodeURIComponent(cautelaId);
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) throw new Error(data.detail || "Erro ao carregar equipamentos.");
+        equipList._items = data.items || [];
+        renderEquipList();
+      })
+      .catch(function (err) {
+        equipList.innerHTML = '<div style="padding:0.75rem 0;color:#b91c1c;">' + err.message + "</div>";
+      });
+  }
+
+  initialItens.forEach(function (item) {
+    var key = item.key || itemKey(item);
+    selecionados[key] = {
+      categoria: item.categoria,
+      origem_tipo: item.origem_tipo,
+      origem_id: item.origem_id,
+      descricao: item.descricao,
+      quantidade: item.quantidade || null
+    };
+  });
+  renderChips();
+
+  servidorInput.addEventListener("input", function () {
+    servidorIdInput.value = "";
+    equipPanel.classList.add("is-disabled");
+    clearTimeout(buscaTimer);
+    buscaTimer = setTimeout(function () { buscarServidores(servidorInput.value); }, 250);
+  });
+  servidorInput.addEventListener("focus", function () {
+    if (servidorIdInput.value) {
+      servidorIdInput.value = "";
+      servidorInput.value = "";
+      equipPanel.classList.add("is-disabled");
+    }
+    buscarServidores(servidorInput.value);
+  });
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".cautela-servidor-wrap")) servidorList.classList.remove("is-open");
+  });
+
+  document.getElementById("btn-selecionar-equipamento").addEventListener("click", function () {
+    if (!servidorIdInput.value) {
+      if (window.SIGENAlert) SIGENAlert.warning("Selecione um servidor antes de escolher equipamentos.");
+      else alert("Selecione um servidor antes de escolher equipamentos.");
+      return;
+    }
+    openModal();
+  });
+
+  document.querySelectorAll("#equip-tabs .cautela-tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll("#equip-tabs .cautela-tab").forEach(function (t) { t.classList.remove("is-active"); });
+      tab.classList.add("is-active");
+      categoriaAtiva = tab.getAttribute("data-categoria");
+      loadEquipamentos();
+    });
+  });
+
+  equipBusca.addEventListener("input", function () {
+    clearTimeout(buscaTimer);
+    buscaTimer = setTimeout(loadEquipamentos, 250);
+  });
+
+  modal.querySelectorAll("[data-close='modal-equipamento']").forEach(function (el) {
+    el.addEventListener("click", closeModal);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+  });
+
+  document.getElementById("cautela-form").addEventListener("submit", function (e) {
+    syncItensInput();
+    if (!servidorIdInput.value) {
+      e.preventDefault();
+      if (window.SIGENAlert) SIGENAlert.warning("Selecione um servidor.");
+      else alert("Selecione um servidor.");
+      return;
+    }
+    if (!Object.keys(selecionados).length) {
+      e.preventDefault();
+      if (window.SIGENAlert) SIGENAlert.warning("Selecione ao menos um equipamento.");
+      else alert("Selecione ao menos um equipamento.");
+      return;
+    }
+    var munSemQtd = Object.values(selecionados).find(function (it) {
+      return it.categoria === "municao" && (!it.quantidade || parseInt(it.quantidade, 10) < 1);
+    });
+    if (munSemQtd) {
+      e.preventDefault();
+      if (window.SIGENAlert) SIGENAlert.warning("Informe a quantidade das munições selecionadas.");
+      else alert("Informe a quantidade das munições selecionadas.");
+    }
+  });
+})();
+</script>
+{% endblock %}
