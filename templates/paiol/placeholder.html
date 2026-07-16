@@ -1,19 +1,23 @@
 {% extends "base.html" %}
-{% import "macros/mod_list.html" as mod %}
+{% set hide_app_header = True %}
 
-{% block title %}Placeholder — Paiol{% endblock %}
+{% block title %}{{ titulo }} — Paiol{% endblock %}
 
 {% block content %}
-{{ mod.assets() }}
+<link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
 
-<div class="mod-page">
-  {{ mod.header(titulo, descricao, none, "", "fa-person-digging", false, "/paiol/dashboard") }}
+<div class="container">
+  <h2>{{ titulo }}</h2>
+  <p class="form-hint">{{ descricao }}</p>
 
-  <section class="mod-panel" style="padding:2rem;text-align:center;">
-    <div style="font-size:3rem;margin-bottom:1rem;">🚧</div>
-    <h2 style="margin:0 0 0.5rem;">Em construção — {{ fase }}</h2>
-    <p style="color:#64748b;max-width:520px;margin:0 auto;">{{ descricao }}</p>
-    <p style="margin-top:1.5rem;"><a href="/paiol/dashboard" class="mod-btn mod-btn--primary"><i class="fas fa-chart-pie"></i> Voltar ao dashboard</a></p>
-  </section>
+  <fieldset>
+    <legend>Status</legend>
+    <div class="module-form-empty">
+      <p>Esta funcionalidade está em construção (fase {{ fase }}).</p>
+      <div class="buttons">
+        <a href="/paiol/dashboard" class="btn-cancel">Voltar ao dashboard</a>
+      </div>
+    </div>
+  </fieldset>
 </div>
 {% endblock %}

@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Armamentos De Porte e Portátil — Paiol{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+<link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
+
+<div class="mod-page">
+  {{ mod.header(
+    "Armamentos De Porte e Portátil",
+    "Cadastro de armamentos com espécie, fabricante, modelo, série e calibre.",
+    add_label="Cadastrar",
+    add_icon="fa-plus",
+    show_clear=true,
+    back_url="/paiol/dashboard",
+    add_button_id="btn-open-armamento-modal"
+  ) }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Código", 0, "Filtrar por código...", "filter-codigo") }}
+  {{ mod.filter_text("Espécie", 1, "Filtrar por espécie...", "filter-especie") }}
+  {{ mod.filter_text("Modelo", 2, "Filtrar por modelo...", "filter-modelo") }}
+  {{ mod.filter_text("Fabricante", 3, "Filtrar por fabricante...", "filter-fabricante") }}
+  {{ mod.filter_text("Nº série", 4, "Filtrar por série...", "filter-serie") }}
+  {{ mod.filter_text("Calibre", 5, "Filtrar por calibre...", "filter-calibre") }}
+  {{ mod.filter_checkbox_options("Status", 6, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Armamentos cadastrados", "paiol-armamentos-count") }}
+  {% if armamentos %}
+  <table id="paiolArmamentosTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-code">Código</th>
+        <th class="mod-col-main">Espécie</th>
+        <th>Modelo</th>
+        <th>Fabricante</th>
+        <th>Nº de série</th>
+        <th>Calibre</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in armamentos %}
+      <tr>
+        <td data-search="{{ a.codigo }}"><strong>{{ a.codigo }}</strong></td>
+        <td data-search="{{ a.especie }}"><strong>{{ a.especie or '—' }}</strong></td>
+        <td data-search="{{ a.modelo }}">{{ a.modelo or '—' }}</td>
+        <td data-search="{{ a.marca_fabricante }}">{{ a.marca_fabricante or '—' }}</td>
+        <td data-search="{{ a.numero_serie }}">{{ a.numero_serie or '—' }}</td>
+        <td data-search="{{ a.calibre }}">{{ a.calibre or '—' }}</td>
+        <td data-search="{{ 'Ativo' if a.ativo else 'Inativo' }}">{{ mod.status_ativo(a.ativo) }}</td>
+        <td>{{ mod.actions(edit_onclick="openArmamentoModal(" ~ a.id ~ ")") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="mod-empty">
+    <i class="fas fa-crosshairs"></i>
+    <p>Nenhum armamento cadastrado.</p>
+    <button type="button" class="mod-btn mod-btn--primary" id="btn-empty-armamento-modal" style="margin-top:1rem;">
+      <i class="fas fa-plus"></i> Cadastrar
+    </button>
+  </div>
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+<div id="modal-armamento" class="mod-modal" aria-hidden="true">
+  <div class="mod-modal__backdrop" data-close="modal-armamento"></div>
+  <div class="mod-modal__dialog mod-modal__dialog--md" role="dialog" aria-labelledby="modal-armamento-title">
+    <div class="mod-modal__header">
+      <h3 id="modal-armamento-title">Cadastrar armamento</h3>
+      <button type="button" class="mod-modal__close" data-close="modal-armamento" aria-label="Fechar">&times;</button>
+    </div>
+    <form id="form-armamento" novalidate>
+      <div class="mod-modal__body">
+        <input type="hidden" id="armamento-id" value="">
+        <div id="armamento-campos-grid" class="mod-form-campos-grid"></div>
+        <div class="form-group form-group--check" id="armamento-ativo-wrap" style="display:none; margin-top:0.75rem;">
+          <label><input type="checkbox" id="armamento-ativo" checked> Ativo</label>
+        </div>
+        <p id="armamento-form-error" class="form-error" style="display:none; margin-top:0.75rem;"></p>
+      </div>
+      <div class="mod-modal__footer mod-modal__footer--bar">
+        <button type="button" class="btn-cancel" data-close="modal-armamento">Cancelar</button>
+        <button type="submit" class="btn-submit" id="armamento-submit-btn">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var ARMAMENTO_CAMPOS = {{ armamento_campos | tojson }};
+  var OPCOES_CAMPOS = {{ opcoes_campos | tojson }};
+  var modal = document.getElementById("modal-armamento");
+  var form = document.getElementById("form-armamento");
+  var grid = document.getElementById("armamento-campos-grid");
+  var idInput = document.getElementById("armamento-id");
+  var titleEl = document.getElementById("modal-armamento-title");
+  var submitBtn = document.getElementById("armamento-submit-btn");
+  var errorEl = document.getElementById("armamento-form-error");
+  var ativoWrap = document.getElementById("armamento-ativo-wrap");
+  var ativoInput = document.getElementById("armamento-ativo");
+  var modalScrollY = 0;
+
+  function mountModal() {
+    if (modal && modal.parentNode !== document.body) document.body.appendChild(modal);
+  }
+
+  function openModal() {
+    mountModal();
+    modalScrollY = window.scrollY || 0;
+    document.documentElement.classList.add("mod-modal-open");
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeModal() {
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.documentElement.classList.remove("mod-modal-open");
+    window.scrollTo(0, modalScrollY);
+  }
+
+  function renderCampo(campo) {
+    var wrap = document.createElement("div");
+    var fullWidth = campo.full_width || campo.name === "numero_serie";
+    wrap.className = "form-group" + (fullWidth ? " form-group--full" : "");
+    var label = document.createElement("label");
+    label.setAttribute("for", "armamento-" + campo.name);
+    label.textContent = campo.label + (campo.required ? " *" : "");
+    wrap.appendChild(label);
+
+    var input;
+    if (campo.type === "select") {
+      input = document.createElement("select");
+      input.innerHTML = '<option value="">— Selecione —</option>';
+      if (campo.options_source) {
+        var opts = OPCOES_CAMPOS[campo.options_source] || [];
+        if (!opts.length) {
+          var emptyOpt = document.createElement("option");
+          emptyOpt.value = "";
+          emptyOpt.textContent = campo.empty_label || "Nenhuma opção disponível";
+          emptyOpt.disabled = true;
+          input.appendChild(emptyOpt);
+        } else {
+          opts.forEach(function (opt) {
+            var o = document.createElement("option");
+            o.value = opt.value;
+            o.textContent = opt.label;
+            input.appendChild(o);
+          });
+        }
+      } else {
+        (campo.options || []).forEach(function (opt) {
+          var o = document.createElement("option");
+          o.value = opt;
+          o.textContent = opt;
+          input.appendChild(o);
+        });
+      }
+    } else {
+      input = document.createElement("input");
+      input.type = "text";
+    }
+    input.id = "armamento-" + campo.name;
+    input.name = campo.name;
+    if (campo.placeholder) input.placeholder = campo.placeholder;
+    if (campo.required) input.required = true;
+    wrap.appendChild(input);
+    if (campo.help) {
+      var help = document.createElement("small");
+      help.className = "form-field-help";
+      help.textContent = campo.help;
+      wrap.appendChild(help);
+    }
+    return wrap;
+  }
+
+  function renderCampos(values) {
+    values = values || {};
+    grid.innerHTML = "";
+    ARMAMENTO_CAMPOS.forEach(function (campo) {
+      grid.appendChild(renderCampo(campo));
+      var el = document.getElementById("armamento-" + campo.name);
+      if (el && values[campo.name] != null) el.value = values[campo.name];
+    });
+  }
+
+  function collectPayload() {
+    var payload = { ativo: ativoInput.checked };
+    ARMAMENTO_CAMPOS.forEach(function (campo) {
+      var el = document.getElementById("armamento-" + campo.name);
+      payload[campo.name] = el ? (el.value || "").trim() : "";
+    });
+    return payload;
+  }
+
+  function resetForm() {
+    idInput.value = "";
+    ativoWrap.style.display = "none";
+    errorEl.style.display = "none";
+    errorEl.textContent = "";
+    titleEl.textContent = "Cadastrar armamento";
+    renderCampos();
+  }
+
+  window.openArmamentoModal = function (id) {
+    resetForm();
+    fetch("/paiol/cadastro/tipos-material/opcoes")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok && data.opcoes) OPCOES_CAMPOS = data.opcoes;
+        if (id) {
+          titleEl.textContent = "Editar armamento";
+          ativoWrap.style.display = "block";
+          return fetch("/paiol/cadastro/armamentos/api/" + id).then(function (r) { return r.json(); });
+        }
+        openModal();
+        return null;
+      })
+      .then(function (data) {
+        if (!data) return;
+        if (!data.ok) throw new Error(data.detail || "Erro ao carregar.");
+        idInput.value = data.item.id;
+        renderCampos(data.item);
+        ativoInput.checked = !!data.item.ativo;
+        openModal();
+      })
+      .catch(function (err) {
+        if (window.SIGENAlert) SIGENAlert.error(err.message);
+        else alert(err.message);
+      });
+  };
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    errorEl.style.display = "none";
+    var payload = collectPayload();
+    var itemId = idInput.value;
+    var url = itemId ? "/paiol/cadastro/armamentos/api/" + itemId : "/paiol/cadastro/armamentos/api";
+    submitBtn.disabled = true;
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json().then(function (d) { return { data: d }; }); })
+      .then(function (res) {
+        if (!res.data.ok) throw new Error(res.data.detail || "Não foi possível salvar.");
+        closeModal();
+        submitBtn.disabled = false;
+        var msg = itemId ? "Armamento atualizado." : "Armamento cadastrado.";
+        if (window.SIGENAlert) {
+          SIGENAlert.success(msg).then(function () { window.location.reload(); });
+        } else {
+          window.location.reload();
+        }
+      })
+      .catch(function (err) {
+        errorEl.textContent = err.message;
+        errorEl.style.display = "block";
+        submitBtn.disabled = false;
+      });
+  });
+
+  document.getElementById("btn-open-armamento-modal")?.addEventListener("click", function () { openArmamentoModal(); });
+  document.getElementById("btn-empty-armamento-modal")?.addEventListener("click", function () { openArmamentoModal(); });
+  modal.querySelectorAll("[data-close='modal-armamento']").forEach(function (el) {
+    el.addEventListener("click", closeModal);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+  });
+
+  renderCampos();
+})();
+</script>
+
+{{ mod.init_datatable(
+  "paiolArmamentosTable",
+  "paiol-armamentos-count",
+  [[1, "asc"]],
+  [
+    {"targets": 0, "width": "10rem", "className": "mod-col-code"},
+    {"targets": 1, "className": "mod-col-main"},
+    {"targets": 6, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 7, "width": "5.75rem", "className": "mod-col-actions"}
+  ],
+  [
+    {"col": 0, "input": "#filter-codigo"},
+    {"col": 1, "input": "#filter-especie"},
+    {"col": 2, "input": "#filter-modelo"},
+    {"col": 3, "input": "#filter-fabricante"},
+    {"col": 4, "input": "#filter-serie"},
+    {"col": 5, "input": "#filter-calibre"}
+  ],
+  armamentos|length > 0
+) }}
+{% endblock %}

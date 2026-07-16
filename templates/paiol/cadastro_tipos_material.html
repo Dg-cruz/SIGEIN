@@ -6,58 +6,6 @@
 {% block content %}
 {{ mod.assets() }}
 <link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
-<style>
-  #modal-tipo-material .mod-modal__body { padding: 1rem 1.25rem; }
-  #modal-tipo-material .tipo-campos-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.65rem 0.75rem;
-    margin-top: 0.5rem;
-  }
-  #modal-tipo-material .tipo-campos-grid .form-group--full { grid-column: 1 / -1; }
-  #modal-tipo-material .form-group { margin-bottom: 0; }
-  #modal-tipo-material .form-group label {
-    font-size: 0.78rem;
-    margin-bottom: 0.2rem;
-  }
-  #modal-tipo-material .form-group input,
-  #modal-tipo-material .form-group select,
-  #modal-tipo-material .form-group textarea {
-    padding: 0.4rem 0.55rem;
-    font-size: 0.84rem;
-    min-height: 2rem;
-  }
-  #modal-tipo-material .form-group textarea { min-height: 3.5rem; }
-  #modal-tipo-material .tipo-field-help {
-    display: block;
-    margin-top: 0.15rem;
-    font-size: 0.72rem;
-    color: #64748b;
-    line-height: 1.3;
-  }
-  #modal-tipo-material #tipo-categoria-hint {
-    font-size: 0.78rem;
-    margin: 0.5rem 0 0.25rem;
-  }
-  #modal-tipo-material .tipo-quantidade-opcoes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem 1rem;
-    margin: 0.35rem 0 0.5rem;
-  }
-  #modal-tipo-material .tipo-quantidade-opt {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.84rem;
-    font-weight: 500;
-    color: #334155;
-    cursor: pointer;
-  }
-  @media (max-width: 560px) {
-    #modal-tipo-material .tipo-campos-grid { grid-template-columns: 1fr; }
-  }
-</style>
 
 <div class="mod-page">
   {{ mod.header(
@@ -142,22 +90,20 @@
           </select>
         </div>
 
-        <p id="tipo-categoria-hint" class="mod-muted" style="display:none; margin: 0.75rem 0 1rem; line-height: 1.5;"></p>
+        <p id="tipo-categoria-hint" class="form-hint" style="display:none; margin: 0.75rem 0 1rem;"></p>
 
         <div id="tipo-campos-dinamicos" style="display:none;">
-          <div id="tipo-campos-grid" class="tipo-campos-grid"></div>
+          <div id="tipo-campos-grid" class="mod-form-campos-grid"></div>
           <div class="form-group form-group--check" id="tipo-ativo-wrap" style="display:none; margin-top:0.75rem;">
             <label><input type="checkbox" id="tipo-ativo" name="ativo" checked> Ativo</label>
           </div>
         </div>
 
-        <p id="tipo-form-error" class="mod-form-error" style="display:none; color:#dc2626; margin-top:0.75rem;"></p>
+        <p id="tipo-form-error" class="form-error" style="display:none; margin-top:0.75rem;"></p>
       </div>
       <div class="mod-modal__footer mod-modal__footer--bar">
-        <button type="button" class="mod-btn mod-btn--ghost" data-close="modal-tipo-material">Cancelar</button>
-        <button type="submit" class="mod-btn mod-btn--primary" id="tipo-submit-btn" disabled>
-          <i class="fas fa-check"></i> Salvar
-        </button>
+        <button type="button" class="btn-cancel" data-close="modal-tipo-material">Cancelar</button>
+        <button type="submit" class="btn-submit" id="tipo-submit-btn" disabled>Salvar</button>
       </div>
     </form>
   </div>
@@ -285,6 +231,9 @@
     } else if (campo.type === "textarea") {
       input = document.createElement("textarea");
       input.rows = 2;
+    } else if (campo.type === "date") {
+      input = document.createElement("input");
+      input.type = "date";
     } else {
       input = document.createElement("input");
       input.type = "text";
@@ -298,7 +247,7 @@
 
     if (campo.help) {
       var help = document.createElement("small");
-      help.className = "tipo-field-help";
+      help.className = "form-field-help";
       help.textContent = campo.help;
       wrap.appendChild(help);
     }
@@ -444,11 +393,16 @@
     }
     var itemId = idInput.value;
     var isMunicao = payload.categoria === "municoes_explosivos";
-    var url = isMunicao
-      ? (itemId ? "/paiol/cadastro/municoes/api/" + itemId : "/paiol/cadastro/municoes/api")
-      : (itemId ? "/paiol/cadastro/tipos-material/api/" + itemId : "/paiol/cadastro/tipos-material/api");
+    var isArmamento = payload.categoria === "armamento";
+    var url;
     if (isMunicao) {
+      url = itemId ? "/paiol/cadastro/municoes/api/" + itemId : "/paiol/cadastro/municoes/api";
       delete payload.categoria;
+    } else if (isArmamento) {
+      url = itemId ? "/paiol/cadastro/armamentos/api/" + itemId : "/paiol/cadastro/armamentos/api";
+      delete payload.categoria;
+    } else {
+      url = itemId ? "/paiol/cadastro/tipos-material/api/" + itemId : "/paiol/cadastro/tipos-material/api";
     }
     submitBtn.disabled = true;
     fetch(url, {
@@ -461,23 +415,27 @@
         if (!res.data.ok) throw new Error(res.data.detail || "Não foi possível salvar.");
         closeModal();
         submitBtn.disabled = false;
-        if (isMunicao) {
-          if (window.SIGENAlert) {
-            SIGENAlert.success("Munição cadastrada com sucesso.").then(function () {
-              window.location.href = "/paiol/cadastro/municoes";
-            });
-          } else {
-            window.location.href = "/paiol/cadastro/municoes";
-          }
+        var go = function (url) {
+          if (url) window.location.href = url;
+          else window.location.reload();
+        };
+        if (isMunicao || (res.data.redirect && String(res.data.redirect).indexOf("municoes") >= 0)) {
+          var msgMun = "Munição cadastrada com sucesso.";
+          if (window.SIGENAlert) SIGENAlert.success(msgMun).then(function () { go("/paiol/cadastro/municoes"); });
+          else go("/paiol/cadastro/municoes");
+          return;
+        }
+        if (isArmamento || (res.data.redirect && String(res.data.redirect).indexOf("materiais-belicos") >= 0)) {
+          var msgArm = "Armamento cadastrado com sucesso.";
+          if (window.SIGENAlert) SIGENAlert.success(msgArm).then(function () { go("/paiol/cadastro/materiais-belicos"); });
+          else go("/paiol/cadastro/materiais-belicos");
           return;
         }
         var msg = itemId ? "Tipo atualizado com sucesso." : "Tipo cadastrado com sucesso.";
         if (window.SIGENAlert) {
-          SIGENAlert.success(msg).then(function () {
-            window.location.reload();
-          });
+          SIGENAlert.success(msg).then(function () { go(res.data.redirect); });
         } else {
-          window.location.reload();
+          go(res.data.redirect);
         }
       })
       .catch(function (err) {

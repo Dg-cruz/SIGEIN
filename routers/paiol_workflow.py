@@ -2,8 +2,8 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, Form, Query, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_302_FOUND
 
@@ -11,9 +11,31 @@ from database import get_db
 from dependencies import get_current_user
 from services.paiol_audit import log_paiol
 from models import PaiolDeposito, PaiolMaterial, StatusUsuarioEnum, Unidade, User
-from paiol_constants import STATUS_REQUISICAO_LABELS_STR, StatusRequisicaoPaiol, TIPO_MOVIMENTO_LABELS, TipoMovimentacaoPaiol
+from paiol_constants import (
+    CAUTELA_ABAS_EQUIPAMENTO,
+    STATUS_CAUTELA_LABELS_STR,
+    STATUS_REQUISICAO_LABELS_STR,
+    StatusRequisicaoPaiol,
+    TIPO_MOVIMENTO_LABELS,
+    TipoMovimentacaoPaiol,
+)
 from services.paiol_assinatura_service import assinaturas_documento
 from services.paiol_helpers import user_context
+from services.paiol_cautela_service import (
+    PaiolCautelaError,
+    atualizar_cautela,
+    cautela_para_form,
+    criar_cautela,
+    dar_baixa_cautela,
+    excluir_cautela,
+    listar_cautelas,
+    listar_equipamentos_categoria,
+    listar_servidores_habilitados,
+    matricula_servidor,
+    obter_cautela,
+    parse_itens_json,
+    resumo_cautela,
+)
 from services.paiol_workflow_service import (
     PaiolWorkflowError,
     aprovar_requisicao,
@@ -428,6 +450,241 @@ def _operacao_list(tipo: TipoMovimentacaoPaiol, titulo, subtitulo, icone, add_ur
             },
         )
     return handler
+
+
+@router.get("/cautela")
+def cautela_lista(request: Request, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    cautelas = listar_cautelas(db, ctx["orgao_id"])
+    linhas = []
+    for c in cautelas:
+        resumo = resumo_cautela(c)
+        linhas.append(
+            {
+                "cautela": c,
+                "matricula": matricula_servidor(c.servidor),
+                "resumo": resumo,
+            }
+        )
+    return templates.TemplateResponse(
+        "paiol/cautela_list.html",
+        {
+            "request": request,
+            "hide_app_header": True,
+            "cautelas": linhas,
+            "status_labels": STATUS_CAUTELA_LABELS_STR,
+        },
+    )
+
+
+def _render_cautela_form(request, ctx, db, *, cautela=None, error=None, form_data=None):
+    servidores = listar_servidores_habilitados(db, ctx["orgao_id"])
+    data = form_data or (cautela_para_form(cautela) if cautela else None)
+    if data and data.get("servidor_id") and not data.get("servidor_nome"):
+        srv = db.query(User).filter(User.id == data["servidor_id"]).first()
+        if srv:
+            data["servidor_nome"] = srv.nome
+            data["servidor_matricula"] = matricula_servidor(srv)
+    return templates.TemplateResponse(
+        "paiol/cautela_form.html",
+        {
+            "request": request,
+            "hide_app_header": True,
+            "cautela": cautela,
+            "form_data": data,
+            "servidores": servidores,
+            "abas_equipamento": CAUTELA_ABAS_EQUIPAMENTO,
+            "status_labels": STATUS_CAUTELA_LABELS_STR,
+            "error": error,
+            "is_edit": cautela is not None,
+        },
+    )
+
+
+@router.get("/cautela/api/servidores")
+def cautela_api_servidores(
+    q: str = Query(""),
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    rows = listar_servidores_habilitados(db, ctx["orgao_id"], q)
+    return JSONResponse(
+        {
+            "ok": True,
+            "items": [
+                {
+                    "id": s.id,
+                    "nome": s.nome,
+                    "matricula": matricula_servidor(s),
+                }
+                for s in rows
+            ],
+        }
+    )
+
+
+@router.get("/cautela/api/equipamentos")
+def cautela_api_equipamentos(
+    categoria: str = Query(...),
+    q: str = Query(""),
+    cautela_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    try:
+        itens = listar_equipamentos_categoria(
+            db, ctx, categoria, q, exclude_cautela_id=cautela_id
+        )
+    except PaiolCautelaError as e:
+        return JSONResponse({"ok": False, "detail": str(e)}, status_code=400)
+    return JSONResponse({"ok": True, "items": itens})
+
+
+@router.get("/cautela/add")
+def cautela_add_form(request: Request, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    return _render_cautela_form(request, ctx, db)
+
+
+@router.post("/cautela/add")
+def cautela_add_post(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+    servidor_id: int = Form(...),
+    itens_json: str = Form(...),
+    observacao: str = Form(""),
+    status: str = Form("ativa"),
+    cautela_fixa: str = Form("nao"),
+):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    is_fixa = (cautela_fixa or "").strip().lower() in {"sim", "1", "true", "on"}
+    try:
+        itens = parse_itens_json(itens_json)
+        criar_cautela(db, ctx, servidor_id, itens, observacao, status, cautela_fixa=is_fixa)
+        log_paiol(db, user, request, "Cautela registrada")
+        return RedirectResponse("/paiol/movimentacoes/cautela", status_code=HTTP_302_FOUND)
+    except (PaiolCautelaError, ValueError) as e:
+        try:
+            itens_parsed = parse_itens_json(itens_json)
+        except PaiolCautelaError:
+            itens_parsed = []
+        form_data = {
+            "servidor_id": servidor_id,
+            "observacao": observacao,
+            "status": status,
+            "cautela_fixa": is_fixa,
+            "itens": itens_parsed,
+        }
+        return _render_cautela_form(request, ctx, db, error=str(e), form_data=form_data)
+
+
+@router.get("/cautela/edit/{cautela_id}")
+def cautela_edit_form(
+    cautela_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    try:
+        cautela = obter_cautela(db, cautela_id, ctx["orgao_id"])
+    except PaiolCautelaError as e:
+        return RedirectResponse("/paiol/movimentacoes/cautela", status_code=HTTP_302_FOUND)
+    return _render_cautela_form(request, ctx, db, cautela=cautela)
+
+
+@router.post("/cautela/edit/{cautela_id}")
+def cautela_edit_post(
+    cautela_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+    servidor_id: int = Form(...),
+    itens_json: str = Form(...),
+    observacao: str = Form(""),
+    status: str = Form("ativa"),
+    cautela_fixa: str = Form("nao"),
+):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    is_fixa = (cautela_fixa or "").strip().lower() in {"sim", "1", "true", "on"}
+    try:
+        cautela = obter_cautela(db, cautela_id, ctx["orgao_id"])
+        itens = parse_itens_json(itens_json)
+        atualizar_cautela(
+            db, ctx, cautela_id, servidor_id, itens, observacao, status, cautela_fixa=is_fixa
+        )
+        log_paiol(db, user, request, f"Cautela #{cautela_id} atualizada")
+        return RedirectResponse("/paiol/movimentacoes/cautela", status_code=HTTP_302_FOUND)
+    except (PaiolCautelaError, ValueError) as e:
+        try:
+            cautela = obter_cautela(db, cautela_id, ctx["orgao_id"])
+        except PaiolCautelaError:
+            return RedirectResponse("/paiol/movimentacoes/cautela", status_code=HTTP_302_FOUND)
+        try:
+            itens_parsed = parse_itens_json(itens_json)
+        except PaiolCautelaError:
+            itens_parsed = []
+        form_data = {
+            "servidor_id": servidor_id,
+            "observacao": observacao,
+            "status": status,
+            "cautela_fixa": is_fixa,
+            "itens": itens_parsed,
+        }
+        return _render_cautela_form(request, ctx, db, cautela=cautela, error=str(e), form_data=form_data)
+
+
+@router.post("/cautela/delete/{cautela_id}")
+def cautela_delete(
+    cautela_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    try:
+        excluir_cautela(db, ctx, cautela_id)
+        log_paiol(db, user, request, f"Cautela #{cautela_id} excluída")
+        return JSONResponse({"ok": True})
+    except PaiolCautelaError as e:
+        return JSONResponse({"ok": False, "detail": str(e)}, status_code=400)
+
+
+@router.post("/cautela/baixa/{cautela_id}")
+def cautela_baixa(
+    cautela_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    if redir := _auth(user):
+        return redir
+    ctx = user_context(db, user)
+    try:
+        dar_baixa_cautela(db, ctx, cautela_id)
+        log_paiol(db, user, request, f"Baixa da cautela #{cautela_id}")
+        return JSONResponse({"ok": True})
+    except PaiolCautelaError as e:
+        return JSONResponse({"ok": False, "detail": str(e)}, status_code=400)
 
 
 @router.get("/devolucoes")

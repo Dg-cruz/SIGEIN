@@ -11,19 +11,19 @@ class CategoriaTipoMaterial(str, enum.Enum):
 
 
 CATEGORIA_TIPO_MATERIAL_LABELS = {
-    CategoriaTipoMaterial.ARMAMENTO: "Armamento Leve e Pesado",
-    CategoriaTipoMaterial.MUNICOES_EXPLOSIVOS: "Munições e Explosivos",
+    CategoriaTipoMaterial.ARMAMENTO: "Armamentos De Porte e Portátil",
+    CategoriaTipoMaterial.MUNICOES_EXPLOSIVOS: "Munições e Químicos",
     CategoriaTipoMaterial.SISTEMAS_OPTICOS: "Sistemas Ópticos e Eletrônicos",
     CategoriaTipoMaterial.EPI: "Equipamentos de Proteção Individual (EPI)",
 }
 
 CATEGORIA_TIPO_MATERIAL_DESCRICOES = {
     CategoriaTipoMaterial.ARMAMENTO: (
-        "Rifles, pistolas, metralhadoras, morteiros e canhões. "
+        "Pistolas, revólveres, espingardas, carabinas e rifles. "
         "Controlados por número de série e histórico individual de manutenção."
     ),
     CategoriaTipoMaterial.MUNICOES_EXPLOSIVOS: (
-        "Projéteis, granadas, pólvora e artefatos pirotécnicos."
+        "Projéteis, munições, químicos e artefatos correlatos."
     ),
     CategoriaTipoMaterial.SISTEMAS_OPTICOS: (
         "Óculos de visão noturna, miras a laser, telêmetros e sistemas de comunicação táticos."
@@ -43,7 +43,6 @@ CATEGORIA_TIPO_PREFIX = {
 MUNICAO_QUANTIDADE_TIPOS = [
     ("unidade", "Unidade"),
     ("caixa", "Caixa"),
-    ("lote", "Lote"),
 ]
 
 MUNICAO_CAMPOS = [
@@ -69,6 +68,19 @@ MUNICAO_CAMPOS = [
         "required": True,
         "options_source": "fabricantes",
         "empty_label": "Nenhum fabricante cadastrado",
+    },
+    {
+        "name": "lote",
+        "label": "Lote",
+        "type": "text",
+        "required": True,
+        "placeholder": "Informe o lote",
+    },
+    {
+        "name": "validade",
+        "label": "Validade",
+        "type": "date",
+        "required": True,
     },
     {
         "name": "quantidade",
@@ -118,7 +130,7 @@ CATEGORIA_TIPO_MATERIAL_CAMPOS = {
             "type": "select",
             "required": True,
             "options_source": "calibres",
-            "empty_label": "Nenhum calibre cadastrado em Munições",
+            "empty_label": "Nenhum calibre cadastrado em Munições e Químicos",
             "help": "Diâmetro do cano ou da munição utilizada.",
         },
     ],
@@ -152,7 +164,7 @@ class TipoMaterialPaiol(str, enum.Enum):
 
 
 TIPO_MATERIAL_LABELS = {
-    TipoMaterialPaiol.ARMA: "Arma / material bélico",
+    TipoMaterialPaiol.ARMA: "Armamentos De Porte e Portátil",
     TipoMaterialPaiol.MUNICAO: "Munição",
     TipoMaterialPaiol.EXPLOSIVO: "Explosivo",
     TipoMaterialPaiol.ACESSORIO: "Acessório",
@@ -182,6 +194,7 @@ class TipoMovimentacaoPaiol(str, enum.Enum):
     DEVOLUCAO = "devolucao"
     BAIXA = "baixa"
     DESTRUICAO = "destruicao"
+    CAUTELA = "cautela"
 
 
 TIPO_MOVIMENTO_LABELS = {
@@ -194,6 +207,7 @@ TIPO_MOVIMENTO_LABELS = {
     TipoMovimentacaoPaiol.DEVOLUCAO: "Devolução",
     TipoMovimentacaoPaiol.BAIXA: "Baixa",
     TipoMovimentacaoPaiol.DESTRUICAO: "Destruição",
+    TipoMovimentacaoPaiol.CAUTELA: "Cautela",
 }
 
 
@@ -219,11 +233,39 @@ STATUS_REQUISICAO_LABELS = {
 
 STATUS_REQUISICAO_LABELS_STR = {k.value: v for k, v in STATUS_REQUISICAO_LABELS.items()}
 
+
+class StatusCautelaPaiol(str, enum.Enum):
+    ATIVA = "ativa"
+    PENDENTE = "pendente"
+    BAIXADA = "baixada"
+
+
+STATUS_CAUTELA_LABELS = {
+    StatusCautelaPaiol.ATIVA: "Ativa",
+    StatusCautelaPaiol.PENDENTE: "Pendente",
+    StatusCautelaPaiol.BAIXADA: "Baixada",
+}
+
+STATUS_CAUTELA_LABELS_STR = {k.value: v for k, v in STATUS_CAUTELA_LABELS.items()}
+
+CAUTELA_ABAS_EQUIPAMENTO = [
+    {"key": "armamento", "label": "Armamento", "icon": "fa-crosshairs"},
+    {"key": "municao", "label": "Munição", "icon": "fa-bullseye"},
+    {"key": "acessorio_epi", "label": "Acessórios/EPI", "icon": "fa-shield-halved"},
+    {"key": "sistemas_opticos", "label": "Sistemas Ópticos", "icon": "fa-binoculars"},
+]
+
+CAUTELA_CATEGORIAS_GRID = {
+    "armamento": "armamento",
+    "municao": "municao",
+    "acessorio_epi": "acessorio_epi",
+    "sistemas_opticos": "acessorio_epi",
+}
+
 # Catálogo de atalhos disponíveis na dashboard (qualquer item do menu Paiol)
 PAIOL_MENU_CATALOG = [
-    {"key": "cadastro.materiais-belicos", "url": "/paiol/cadastro/materiais-belicos", "label": "Materiais bélicos", "subtitle": "Armas e material controlado", "icon": "fa-crosshairs", "group": "Cadastro"},
-    {"key": "cadastro.municoes", "url": "/paiol/cadastro/municoes", "label": "Munições", "subtitle": "Catálogo de munições", "icon": "fa-bullseye", "group": "Cadastro"},
-    {"key": "cadastro.explosivos", "url": "/paiol/cadastro/explosivos", "label": "Explosivos", "subtitle": "Explosivos e detonantes", "icon": "fa-bomb", "group": "Cadastro"},
+    {"key": "cadastro.materiais-belicos", "url": "/paiol/cadastro/materiais-belicos", "label": "Armamentos De Porte e Portátil", "subtitle": "Armas de porte e portáteis", "icon": "fa-crosshairs", "group": "Cadastro"},
+    {"key": "cadastro.municoes", "url": "/paiol/cadastro/municoes", "label": "Munições e Químicos", "subtitle": "Catálogo de munições e químicos", "icon": "fa-bullseye", "group": "Cadastro"},
     {"key": "cadastro.acessorios", "url": "/paiol/cadastro/acessorios", "label": "Acessórios", "subtitle": "Coletes, coldres e similares", "icon": "fa-toolbox", "group": "Cadastro"},
     {"key": "cadastro.tipos-material", "url": "/paiol/cadastro/tipos-material", "label": "Tipos de materiais", "subtitle": "Categorias e espécies de material", "icon": "fa-tags", "group": "Cadastro"},
     {"key": "cadastro.classes", "url": "/paiol/cadastro/classes", "label": "Classes de material", "subtitle": "Classificação e compatibilidade", "icon": "fa-layer-group", "group": "Cadastro"},
@@ -238,9 +280,8 @@ PAIOL_MENU_CATALOG = [
     {"key": "estoque.inventario", "url": "/paiol/estoque/inventario", "label": "Inventário", "subtitle": "Contagem física", "icon": "fa-clipboard-check", "group": "Estoque"},
     {"key": "estoque.ajustes", "url": "/paiol/estoque/ajustes", "label": "Ajustes", "subtitle": "Correções documentadas", "icon": "fa-sliders", "group": "Estoque"},
     {"key": "estoque.consulta", "url": "/paiol/estoque/consulta", "label": "Consulta de estoque", "subtitle": "Saldos atuais", "icon": "fa-magnifying-glass", "group": "Estoque"},
-    {"key": "mov.requisicoes", "url": "/paiol/movimentacoes/requisicoes", "label": "Requisições", "subtitle": "Solicitações de material", "icon": "fa-file-circle-plus", "group": "Movimentações"},
+    {"key": "mov.cautela", "url": "/paiol/movimentacoes/cautela", "label": "Cautela", "subtitle": "Cautela de material", "icon": "fa-clipboard-list", "group": "Movimentações"},
     {"key": "mov.distribuicoes", "url": "/paiol/movimentacoes/distribuicoes", "label": "Distribuições", "subtitle": "Atendimento de requisições", "icon": "fa-share-from-square", "group": "Movimentações"},
-    {"key": "mov.devolucoes", "url": "/paiol/movimentacoes/devolucoes", "label": "Devoluções", "subtitle": "Retorno ao paiol", "icon": "fa-rotate-left", "group": "Movimentações"},
     {"key": "mov.baixas", "url": "/paiol/movimentacoes/baixas", "label": "Baixas", "subtitle": "Baixa patrimonial", "icon": "fa-ban", "group": "Movimentações"},
     {"key": "mov.destruicao", "url": "/paiol/movimentacoes/destruicao", "label": "Destruição", "subtitle": "Processo de destruição", "icon": "fa-fire", "group": "Movimentações"},
     {"key": "mov.historico", "url": "/paiol/movimentacoes", "label": "Histórico", "subtitle": "Movimentações registradas", "icon": "fa-clock-rotate-left", "group": "Movimentações"},

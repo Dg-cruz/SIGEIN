@@ -1,53 +1,16 @@
 {% extends "base.html" %}
 {% import "macros/mod_list.html" as mod %}
 
-{% block title %}Munições — Paiol{% endblock %}
+{% block title %}Munições e Químicos — Paiol{% endblock %}
 
 {% block content %}
 {{ mod.assets() }}
 <link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
-<style>
-  #modal-municao .mod-modal__body { padding: 1rem 1.25rem; }
-  #modal-municao .municao-campos-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.65rem 0.75rem;
-    margin-top: 0.5rem;
-  }
-  #modal-municao .municao-campos-grid .form-group--full { grid-column: 1 / -1; }
-  #modal-municao .form-group { margin-bottom: 0; }
-  #modal-municao .form-group label { font-size: 0.78rem; margin-bottom: 0.2rem; }
-  #modal-municao .form-group input,
-  #modal-municao .form-group select,
-  #modal-municao .form-group textarea {
-    padding: 0.4rem 0.55rem;
-    font-size: 0.84rem;
-    min-height: 2rem;
-  }
-  #modal-municao .tipo-quantidade-opcoes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem 1rem;
-    margin: 0.35rem 0 0.5rem;
-  }
-  #modal-municao .tipo-quantidade-opt {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.84rem;
-    font-weight: 500;
-    color: #334155;
-    cursor: pointer;
-  }
-  @media (max-width: 560px) {
-    #modal-municao .municao-campos-grid { grid-template-columns: 1fr; }
-  }
-</style>
 
 <div class="mod-page">
   {{ mod.header(
-    "Munições",
-    "Cadastro de munições com calibre, fabricante e quantidade.",
+    "Munições e Químicos",
+    "Cadastro de munições e químicos com calibre, fabricante e quantidade.",
     add_label="Cadastrar",
     add_icon="fa-plus",
     show_clear=true,
@@ -60,10 +23,11 @@
   {{ mod.filter_text("Nome comercial", 1, "Filtrar por nome...", "filter-nome") }}
   {{ mod.filter_text("Calibre", 2, "Filtrar por calibre...", "filter-calibre") }}
   {{ mod.filter_text("Fabricante", 3, "Filtrar por fabricante...", "filter-fabricante") }}
-  {{ mod.filter_checkbox_options("Status", 4, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filter_text("Lote", 4, "Filtrar por lote...", "filter-lote") }}
+  {{ mod.filter_checkbox_options("Status", 7, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
   {{ mod.filters_end() }}
 
-  {{ mod.panel_start("Munições cadastradas", "paiol-municoes-count") }}
+  {{ mod.panel_start("Munições e químicos cadastrados", "paiol-municoes-count") }}
   {% if municoes %}
   <table id="paiolMunicoesTable" class="display mod-table--layout-cols" style="width:100%;">
     <thead>
@@ -72,6 +36,8 @@
         <th class="mod-col-main">Nome comercial</th>
         <th>Calibre</th>
         <th>Fabricante</th>
+        <th>Lote</th>
+        <th>Validade</th>
         <th>Quantidade</th>
         <th class="mod-col-status">Status</th>
         <th class="mod-col-actions" data-orderable="false">Ações</th>
@@ -84,6 +50,10 @@
         <td><strong>{{ m.nome_comercial }}</strong></td>
         <td data-search="{{ m.calibre }}">{{ m.calibre }}</td>
         <td data-search="{{ m.fabricante_marca or '' }}">{{ m.fabricante_marca or '—' }}</td>
+        <td data-search="{{ m.lote or '' }}">{{ m.lote or '—' }}</td>
+        <td data-search="{{ m.validade.strftime('%d/%m/%Y') if m.validade else '' }}">
+          {{ m.validade.strftime('%d/%m/%Y') if m.validade else '—' }}
+        </td>
         <td data-search="{{ m.quantidade_tipo or '' }} {{ m.quantidade_valor or '' }}">
           {% if m.quantidade_tipo and m.quantidade_valor %}
             {{ m.quantidade_valor }} {{ m.quantidade_tipo|capitalize }}
@@ -117,17 +87,15 @@
     <form id="form-municao" novalidate>
       <div class="mod-modal__body">
         <input type="hidden" id="municao-id" value="">
-        <div id="municao-campos-grid" class="municao-campos-grid"></div>
+        <div id="municao-campos-grid" class="mod-form-campos-grid"></div>
         <div class="form-group form-group--check" id="municao-ativo-wrap" style="display:none; margin-top:0.75rem;">
           <label><input type="checkbox" id="municao-ativo" checked> Ativo</label>
         </div>
-        <p id="municao-form-error" style="display:none; color:#dc2626; margin-top:0.75rem;"></p>
+        <p id="municao-form-error" class="form-error" style="display:none; margin-top:0.75rem;"></p>
       </div>
       <div class="mod-modal__footer mod-modal__footer--bar">
-        <button type="button" class="mod-btn mod-btn--ghost" data-close="modal-municao">Cancelar</button>
-        <button type="submit" class="mod-btn mod-btn--primary" id="municao-submit-btn">
-          <i class="fas fa-check"></i> Salvar
-        </button>
+        <button type="button" class="btn-cancel" data-close="modal-municao">Cancelar</button>
+        <button type="submit" class="btn-submit" id="municao-submit-btn">Salvar</button>
       </div>
     </form>
   </div>
@@ -216,6 +184,9 @@
     } else if (campo.type === "textarea") {
       input = document.createElement("textarea");
       input.rows = 2;
+    } else if (campo.type === "date") {
+      input = document.createElement("input");
+      input.type = "date";
     } else {
       input = document.createElement("input");
       input.type = "text";
@@ -356,14 +327,15 @@
   [
     {"targets": 0, "width": "10rem", "className": "mod-col-code"},
     {"targets": 1, "className": "mod-col-main"},
-    {"targets": 5, "width": "7.5rem", "className": "mod-col-status"},
-    {"orderable": false, "targets": 6, "width": "5.75rem", "className": "mod-col-actions"}
+    {"targets": 7, "width": "7.5rem", "className": "mod-col-status"},
+    {"orderable": false, "targets": 8, "width": "5.75rem", "className": "mod-col-actions"}
   ],
   [
     {"col": 0, "input": "#filter-codigo"},
     {"col": 1, "input": "#filter-nome"},
     {"col": 2, "input": "#filter-calibre"},
-    {"col": 3, "input": "#filter-fabricante"}
+    {"col": 3, "input": "#filter-fabricante"},
+    {"col": 4, "input": "#filter-lote"}
   ],
   municoes|length > 0
 ) }}

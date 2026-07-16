@@ -13,6 +13,7 @@ _EVENTO_POR_TIPO = {
     TipoMovimentacaoPaiol.DEVOLUCAO.value: "DEVOLUCAO",
     TipoMovimentacaoPaiol.BAIXA.value: "BAIXA",
     TipoMovimentacaoPaiol.DESTRUICAO.value: "DESTRUICAO",
+    TipoMovimentacaoPaiol.CAUTELA.value: "CAUTELA",
     TipoMovimentacaoPaiol.AJUSTE.value: "AJUSTE",
     TipoMovimentacaoPaiol.INVENTARIO.value: "INVENTARIO",
 }

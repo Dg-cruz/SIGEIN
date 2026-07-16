@@ -2,7 +2,7 @@
 {% import "macros/mod_list.html" as mod %}
 
 {% set tipo_labels = {
-  'arma': 'Arma / material bélico',
+  'arma': 'Armamentos De Porte e Portátil',
   'municao': 'Munição',
   'explosivo': 'Explosivo',
   'acessorio': 'Acessório'
@@ -27,7 +27,7 @@
   {{ mod.filter_checkbox_options("Status", 6 if not tipo_filtro else 5, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
   {{ mod.filters_end() }}
 
-  {{ mod.panel_start("Materiais cadastrados", "paiol-materiais-count") }}
+  {{ mod.panel_start("Armamentos cadastrados" if tipo_filtro == 'arma' else "Materiais cadastrados", "paiol-materiais-count") }}
   {% if materiais %}
   <table id="paiolMateriaisTable" class="display mod-table--layout-cols" style="width:100%;">
     <thead>

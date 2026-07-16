@@ -373,6 +373,29 @@ def registrar_baixa(
     return mov
 
 
+def registrar_cautela(
+    db: Session,
+    ctx: dict,
+    material_id: int,
+    deposito_id: int,
+    quantidade: int,
+    observacao: str | None = None,
+) -> PaiolMovimentacao:
+    if not (observacao or "").strip():
+        raise PaiolWorkflowError("Informe o motivo da cautela.")
+    mov = _saida_workflow(
+        db,
+        ctx,
+        TipoMovimentacaoPaiol.CAUTELA.value,
+        material_id,
+        deposito_id,
+        quantidade,
+        observacao.strip(),
+    )
+    db.commit()
+    return mov
+
+
 def registrar_destruicao(
     db: Session,
     ctx: dict,

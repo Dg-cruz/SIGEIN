@@ -24,6 +24,7 @@ from paiol_constants import (
     CATEGORIA_TIPO_MATERIAL_CAMPOS,
     CATEGORIA_TIPO_MATERIAL_DESCRICOES,
     CATEGORIA_TIPO_MATERIAL_LABELS,
+    CategoriaTipoMaterial,
     MUNICAO_CAMPOS,
     MUNICAO_QUANTIDADE_TIPOS,
     TIPO_MATERIAL_LABELS,
@@ -31,7 +32,7 @@ from paiol_constants import (
     TipoMovimentacaoPaiol,
     TIPO_MOVIMENTO_LABELS,
 )
-from services.paiol_helpers import get_user_row, opcoes_campos_tipo_material
+from services.paiol_helpers import get_user_row, opcoes_campos_tipo_material, user_context
 from services.paiol_service import build_paiol_alerts, build_paiol_dashboard_metrics
 from services.paiol_estoque_service import get_saldo_atual
 from services.paiol_shortcuts import (
@@ -188,14 +189,21 @@ def cadastro_armas(request: Request, db: Session = Depends(get_db), user: str = 
     redirect = _auth_or_redirect(user)
     if redirect:
         return redirect
+    from routers.paiol_cadastro import armamento_view, migrar_tipos_armamento_para_materiais
+
+    ctx = user_context(db, user)
+    migrar_tipos_armamento_para_materiais(db, ctx)
+
+    materiais = _materiais_por_tipo(db, TipoMaterialPaiol.ARMA.value)
+    armamentos = [armamento_view(m) for m in materiais]
     return templates.TemplateResponse(
-        "paiol/cadastro_materiais.html",
+        "paiol/cadastro_armamentos.html",
         {
             "request": request,
             "hide_app_header": True,
-            "materiais": _materiais_por_tipo(db, TipoMaterialPaiol.ARMA.value),
-            "titulo": "Materiais bélicos (armas)",
-            "tipo_filtro": TipoMaterialPaiol.ARMA.value,
+            "armamentos": armamentos,
+            "armamento_campos": CATEGORIA_TIPO_MATERIAL_CAMPOS[CategoriaTipoMaterial.ARMAMENTO.value],
+            "opcoes_campos": opcoes_campos_tipo_material(db),
         },
     )
 
@@ -205,6 +213,9 @@ def cadastro_municoes(request: Request, db: Session = Depends(get_db), user: str
     redirect = _auth_or_redirect(user)
     if redirect:
         return redirect
+    from routers.paiol_cadastro import _ensure_municao_columns
+
+    _ensure_municao_columns()
     municoes = db.query(PaiolMunicao).order_by(PaiolMunicao.nome_comercial).all()
     return templates.TemplateResponse(
         "paiol/cadastro_municoes.html",
