@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% import "macros/mod_list.html" as mod %}
+
+{% block title %}Perfis — Administração{% endblock %}
+
+{% block content %}
+{{ mod.assets() }}
+
+<div class="mod-page">
+  {{ mod.header(
+    "Perfis",
+    "Perfis do sistema e perfis personalizados vinculados aos usuários.",
+    "/admin/perfis/add",
+    "Novo perfil",
+    "fa-user-shield",
+    true,
+    "/dashboard"
+  ) }}
+
+  {{ mod.filters_start() }}
+  {{ mod.filter_text("Nome", 1, "Filtrar por nome...", "filter-nome") }}
+  {{ mod.filter_checkbox_options("Tipo", 2, "tipo", ["Sistema", "Personalizado"], "Selecionar tipo...") }}
+  {{ mod.filter_checkbox_options("Status", 4, "status", ["Ativo", "Inativo"], "Selecionar status...") }}
+  {{ mod.filters_end() }}
+
+  {{ mod.panel_start("Perfis cadastrados", "perfis-count") }}
+  {% if perfis %}
+  <table id="perfisTable" class="display mod-table--layout-cols" style="width:100%;">
+    <thead>
+      <tr>
+        <th class="mod-col-code">ID</th>
+        <th class="mod-col-main">Nome</th>
+        <th class="mod-col-code">Tipo</th>
+        <th class="mod-col-desc">Descrição</th>
+        <th class="mod-col-status">Status</th>
+        <th class="mod-col-actions" data-orderable="false">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in perfis %}
+      <tr>
+        <td class="mod-col-code" data-search="{{ p.id }}">{{ p.id }}</td>
+        <td class="mod-col-main" data-search="{{ p.nome }}"><strong>{{ p.nome }}</strong></td>
+        <td class="mod-col-code" data-search="{{ 'Sistema' if p.is_sistema else 'Personalizado' }}">
+          {% if p.is_sistema %}
+          <span class="mod-badge mod-status--info">Sistema</span>
+          {% else %}
+          <span class="mod-badge mod-status--ok">Personalizado</span>
+          {% endif %}
+        </td>
+        <td class="mod-col-desc" data-search="{{ p.descricao or '' }}" title="{{ p.descricao or '' }}">{{ p.descricao or '—' }}</td>
+        <td class="mod-col-status" data-search="{{ 'Ativo' if p.ativo else 'Inativo' }}">{{ mod.status_ativo(p.ativo) }}</td>
+        <td class="mod-col-actions">
+          <div class="mod-actions">
+            <a href="/admin/perfis/edit/{{ p.id }}" class="mod-action-btn mod-action-btn--edit" title="Editar">
+              <i class="fas fa-pen"></i>
+            </a>
+            <a href="/admin/modulos/{{ p.id }}" class="mod-action-btn" title="Permissões de módulos">
+              <i class="fas fa-table-cells"></i>
+            </a>
+            {% if not p.is_sistema %}
+            <form class="delete-form" data-id="{{ p.id }}" method="post" style="display:inline;">
+              <button type="submit" class="mod-action-btn mod-action-btn--delete delete-form-btn" title="Excluir">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  {{ mod.empty_state("Nenhum perfil cadastrado.", "/admin/perfis/add", "Cadastrar perfil") }}
+  {% endif %}
+  {{ mod.panel_end() }}
+</div>
+
+<script>
+$(function () {
+  {% if perfis %}
+  var table = SIGENModList.initTable("#perfisTable", {
+    order: [[1, "asc"]],
+    autoWidth: false,
+    columnDefs: [
+      { visible: false, targets: [0] },
+      { targets: 1, className: "mod-col-main" },
+      { targets: 2, width: "10rem", className: "mod-col-code" },
+      { targets: 3, className: "mod-col-desc" },
+      { targets: 4, width: "7.5rem", className: "mod-col-status" },
+      { orderable: false, targets: 5, width: "7.5rem", className: "mod-col-actions" }
+    ],
+    countSelector: "#perfis-count",
+  });
+  SIGENModList.initTextFilter(table, 1, "#filter-nome");
+  SIGENModList.initColumnFilters(table, { useDataSearch: true });
+  SIGENModList.initClearFilters({ table: table });
+  {% endif %}
+  SIGENModList.initDelete(function (id) { return "/admin/perfis/delete/" + id; });
+});
+</script>
+{% endblock %}

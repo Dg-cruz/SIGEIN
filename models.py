@@ -1,4 +1,19 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, Float, Date, ForeignKey, func, Enum as SQLEnum, Table, JSON
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    Text,
+    DateTime,
+    Float,
+    Date,
+    ForeignKey,
+    func,
+    Enum as SQLEnum,
+    Table,
+    JSON,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from database import Base
@@ -64,7 +79,9 @@ class User(Base):
         nullable=False,
         default=StatusUsuarioEnum.PENDENTE,
     )
-    
+    # Perfil personalizado (aditivo ao PerfilEnum / role)
+    perfil_personalizado_id = Column(Integer, ForeignKey("perfis.id"), nullable=True)
+
     # ✅ Auditoria
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
@@ -76,6 +93,7 @@ class User(Base):
     orgao = relationship("Orgao")
     unidade = relationship("Unidade")
     movements = relationship("Movement", back_populates="user")
+    perfil_personalizado = relationship("Perfil", back_populates="usuarios")
 
     # Alias legado: sessão e routers antigos usam "username" (= e-mail)
     @hybrid_property
@@ -135,6 +153,56 @@ class User(Base):
             PerfilEnum.MASTER.value,
             PerfilEnum.ADMIN_MUNICIPAL.value,
         }
+
+
+# =====================================================
+# PERFIS PERSONALIZADOS E PERMISSÕES POR MÓDULO
+# =====================================================
+
+class Perfil(Base):
+    __tablename__ = "perfis"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    nome = Column(String(120), unique=True, nullable=False, index=True)
+    codigo = Column(String(50), unique=True, nullable=True, index=True)
+    descricao = Column(Text, nullable=True)
+    ativo = Column(Boolean, default=True, nullable=False)
+    sistema = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, onupdate=datetime.utcnow)
+
+    permissoes = relationship(
+        "PerfilPermissao",
+        back_populates="perfil",
+        cascade="all, delete-orphan",
+    )
+    usuarios = relationship("User", back_populates="perfil_personalizado")
+
+    @property
+    def is_sistema(self) -> bool:
+        return bool(self.sistema) or (
+            self.codigo in {e.value for e in PerfilEnum}
+        )
+
+    def __str__(self):
+        return self.nome
+
+
+class PerfilPermissao(Base):
+    __tablename__ = "perfil_permissoes"
+    __table_args__ = (
+        UniqueConstraint("perfil_id", "modulo", name="uq_perfil_modulo"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    perfil_id = Column(Integer, ForeignKey("perfis.id"), nullable=False, index=True)
+    modulo = Column(String(80), nullable=False, index=True)
+    visualizar = Column(Boolean, default=False, nullable=False)
+    inserir = Column(Boolean, default=False, nullable=False)
+    editar = Column(Boolean, default=False, nullable=False)
+    excluir = Column(Boolean, default=False, nullable=False)
+
+    perfil = relationship("Perfil", back_populates="permissoes")
 
 
 # =====================================================

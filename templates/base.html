@@ -534,14 +534,22 @@
 
             <div class="sidebar__section">
                 <span class="sidebar__label">Cadastros</span>
-                <div class="sidebar-submenu{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') or path.startswith('/admin/geografia') %} open{% endif %}" id="sidebarAdmin">
-                    <button type="button" class="sidebar-submenu__btn" aria-expanded="{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') or path.startswith('/admin/geografia') %}true{% else %}false{% endif %}">
+                <div class="sidebar-submenu{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') or path.startswith('/admin/geografia') or path.startswith('/admin/perfis') or path.startswith('/admin/modulos') %} open{% endif %}" id="sidebarAdmin">
+                    <button type="button" class="sidebar-submenu__btn" aria-expanded="{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') or path.startswith('/admin/geografia') or path.startswith('/admin/perfis') or path.startswith('/admin/modulos') %}true{% else %}false{% endif %}">
                         <i class="fas fa-sliders nav-icon"></i>
                         <span>Administração</span>
                         <i class="fas fa-chevron-down sidebar-submenu__caret"></i>
                     </button>
                     <div class="sidebar-submenu__content">
                         <div class="sidebar-submenu__inner">
+                            <a href="/admin/perfis" class="sidebar-nav__link{% if path.startswith('/admin/perfis') %} is-active{% endif %}">
+                                <i class="fas fa-user-shield nav-icon"></i>
+                                <span>Perfis</span>
+                            </a>
+                            <a href="/admin/modulos" class="sidebar-nav__link{% if path.startswith('/admin/modulos') %} is-active{% endif %}">
+                                <i class="fas fa-table-cells nav-icon"></i>
+                                <span>Módulos</span>
+                            </a>
                             <a href="/categories" class="sidebar-nav__link{% if path.startswith('/categories') %} is-active{% endif %}">
                                 <i class="fas fa-folder nav-icon"></i>
                                 <span>Categorias</span>

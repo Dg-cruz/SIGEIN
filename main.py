@@ -81,6 +81,13 @@ if not IS_VERCEL or os.getenv("RUN_DB_MIGRATIONS") == "1":
     except Exception:
         pass
 
+    try:
+        from services.perfis_service import _ensure_perfis_schema
+
+        _ensure_perfis_schema()
+    except Exception:
+        pass
+
     if os.getenv("SYNC_IBGE_ON_STARTUP", "1") == "1":
         from database import SessionLocal
         from services.ibge_service import IbgeSyncError, ensure_estados
@@ -104,6 +111,12 @@ else:
         _ensure_cautela_schema()
     except Exception:
         pass
+    try:
+        from services.perfis_service import _ensure_perfis_schema
+
+        _ensure_perfis_schema()
+    except Exception:
+        pass
 
 # ========================================
 # 6. ROUTERS (POR ÚLTIMO)
@@ -112,7 +125,7 @@ from routers import (
     auth, dashboard, users, units, orgaos, movements, logs, root,
     equipment_types, brands, states, products, stock,
     categories, eprotocolo, api_geografica, geografia, segem, paiol, paiol_cadastro, paiol_estoque,
-    paiol_workflow, paiol_seguranca, paiol_relatorios, cad, frota
+    paiol_workflow, paiol_seguranca, paiol_relatorios, cad, frota, perfis
 )
 
 app.include_router(root.router)
@@ -143,3 +156,4 @@ app.include_router(paiol_seguranca.router)
 app.include_router(paiol_relatorios.router)
 app.include_router(cad.router)
 app.include_router(frota.router)
+app.include_router(perfis.router)

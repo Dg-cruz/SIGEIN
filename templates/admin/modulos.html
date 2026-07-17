@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% set hide_app_header = True %}
+
+{% block title %}Módulos e permissões — Administração{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
+
+<style>
+  .perm-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+  }
+  .perm-table th,
+  .perm-table td {
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    font-size: 14px;
+  }
+  .perm-table th {
+    background: #f8fafc;
+    color: #004080;
+    font-weight: 600;
+  }
+  .perm-table td.perm-modulo {
+    text-align: left;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  .perm-table input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    transform: scale(1.15);
+  }
+  .perm-select-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 1rem;
+  }
+  .perm-select-row .form-group { min-width: 260px; flex: 1; }
+  .perm-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+  .perm-toolbar button {
+    background: #fff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transform: none;
+  }
+  .perm-toolbar button:hover {
+    background: #f1f5f9;
+    transform: none;
+  }
+</style>
+
+<div class="container">
+  <h2>Módulos e permissões</h2>
+  <p class="form-hint">
+    Defina, para cada perfil, quais módulos e ações (Visualizar, Inserir, Editar, Excluir) estão liberados.
+  </p>
+
+  {% if ok %}
+  <div class="form-error" style="background:#ecfdf5;border-color:#a7f3d0;color:#047857;">
+    Permissões salvas com sucesso.
+  </div>
+  {% endif %}
+
+  {% if not perfis %}
+  <div class="module-form-empty">
+    <p>Nenhum perfil cadastrado. Crie um perfil antes de configurar os módulos.</p>
+    <div class="buttons">
+      <a href="/admin/perfis/add" class="btn-submit">Cadastrar perfil</a>
+      <a href="/admin/perfis" class="btn-cancel">Voltar</a>
+    </div>
+  </div>
+  {% else %}
+
+  <div class="perm-select-row">
+    <div class="form-group">
+      <label for="perfil_sel">Perfil</label>
+      <select id="perfil_sel" onchange="if(this.value) location.href='/admin/modulos/'+this.value">
+        {% for p in perfis %}
+        <option value="{{ p.id }}" {% if perfil_sel and perfil_sel.id == p.id %}selected{% endif %}>
+          {{ p.nome }}{% if not p.ativo %} (inativo){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="buttons" style="margin-top:0;">
+      <a href="/admin/perfis" class="btn-cancel">Gerenciar perfis</a>
+    </div>
+  </div>
+
+  {% if perfil_sel %}
+  <form method="post" action="/admin/modulos/{{ perfil_sel.id }}" id="form-modulos">
+    <fieldset>
+      <legend>Permissões — {{ perfil_sel.nome }}</legend>
+
+      <div class="perm-toolbar">
+        <button type="button" id="btn-marcar-todos">Marcar todos</button>
+        <button type="button" id="btn-desmarcar-todos">Desmarcar todos</button>
+        <button type="button" id="btn-somente-visualizar">Somente visualizar</button>
+      </div>
+
+      <table class="perm-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Módulo</th>
+            {% for key, label in acoes %}
+            <th>{{ label }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for mod_key, mod_label in modulos %}
+          {% set perm = permissoes.get(mod_key, {}) %}
+          <tr>
+            <td class="perm-modulo">{{ mod_label }}</td>
+            {% for acao_key, acao_label in acoes %}
+            <td>
+              <input type="checkbox"
+                     name="perm_{{ mod_key }}_{{ acao_key }}"
+                     value="1"
+                     {% if perm.get(acao_key) %}checked{% endif %}
+                     aria-label="{{ mod_label }} — {{ acao_label }}">
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </fieldset>
+
+    <div class="buttons">
+      <button type="submit" class="btn-submit">Salvar permissões</button>
+      <a href="/admin/perfis" class="btn-cancel">Cancelar</a>
+    </div>
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById("form-modulos");
+  if (!form) return;
+
+  function setAll(checked) {
+    form.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+      cb.checked = checked;
+    });
+  }
+
+  var btnAll = document.getElementById("btn-marcar-todos");
+  var btnNone = document.getElementById("btn-desmarcar-todos");
+  var btnView = document.getElementById("btn-somente-visualizar");
+
+  if (btnAll) btnAll.addEventListener("click", function () { setAll(true); });
+  if (btnNone) btnNone.addEventListener("click", function () { setAll(false); });
+  if (btnView) {
+    btnView.addEventListener("click", function () {
+      form.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+        cb.checked = cb.name.indexOf("_visualizar") !== -1;
+      });
+    });
+  }
+})();
+</script>
+{% endblock %}

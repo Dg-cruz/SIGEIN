@@ -11,6 +11,7 @@ from models import (
     Municipio,
     Orgao,
     Unidade,
+    Perfil,
     PerfilEnum,
     StatusUsuarioEnum,
     Log,
@@ -31,6 +32,46 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 def _perfil_valor(user: User) -> str:
     return user._perfil_valor()
+
+
+def _perfis_disponiveis(db: Session, incluir_id: Optional[int] = None):
+    """Perfis ativos (sistema + personalizados) para o select de usuário."""
+    if incluir_id:
+        q = db.query(Perfil).filter((Perfil.ativo == True) | (Perfil.id == incluir_id))
+    else:
+        q = db.query(Perfil).filter(Perfil.ativo == True)
+    return q.order_by(Perfil.sistema.desc(), Perfil.nome).all()
+
+
+def _parse_perfil_id(value) -> Optional[int]:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _perfil_id_do_usuario(user: User, db: Session) -> Optional[int]:
+    if user.perfil_personalizado_id:
+        return user.perfil_personalizado_id
+    codigo = _perfil_valor(user)
+    p = db.query(Perfil).filter(Perfil.codigo == codigo).first()
+    return p.id if p else None
+
+
+def _resolver_perfil(db: Session, perfil_id: Optional[int]) -> Optional[Perfil]:
+    if not perfil_id:
+        return None
+    return db.query(Perfil).filter(Perfil.id == perfil_id).first()
+
+
+def _role_e_vinculo(perfil_row: Perfil):
+    """Retorna (valor PerfilEnum, id do perfil na tabela perfis)."""
+    codigos = {e.value for e in PerfilEnum}
+    if perfil_row.codigo and perfil_row.codigo in codigos:
+        return perfil_row.codigo, perfil_row.id
+    return PerfilEnum.OPERADOR.value, perfil_row.id
 
 
 def _is_master(user: User) -> bool:
@@ -82,7 +123,17 @@ def limpar_cpf(cpf: str) -> str:
     return re.sub(r'\D', '', cpf)
 
 
-def _form_data_from_request(nome, cpf, email, municipio_id, orgao_id, unidade_id, perfil, status, db: Session):
+def _form_data_from_request(
+    nome,
+    cpf,
+    email,
+    municipio_id,
+    orgao_id,
+    unidade_id,
+    status,
+    db: Session,
+    perfil_id=None,
+):
     """Monta dict para reexibir o formulário com valores preenchidos."""
     estado_id = None
     if municipio_id and db:
@@ -97,8 +148,8 @@ def _form_data_from_request(nome, cpf, email, municipio_id, orgao_id, unidade_id
         "orgao_id": orgao_id or "",
         "unidade_id": unidade_id or "",
         "estado_id": estado_id or "",
-        "perfil": perfil or "",
         "status": status or "",
+        "perfil_id": perfil_id or "",
     }
 
 
@@ -186,7 +237,9 @@ def add_user_form(
             "request": request,
             "user": None,
             "action": "add",
-            "current_user": current_user
+            "current_user": current_user,
+            "perfis_disponiveis": _perfis_disponiveis(db),
+            "selected_perfil_id": None,
         }
     )
 
@@ -204,7 +257,7 @@ def add_user(
     municipio_id: int = Form(...),
     orgao_id: int = Form(...),
     unidade_id: int = Form(...),
-    perfil: str = Form(...),
+    perfil_id: str = Form(...),
     status: str = Form(...),
     senha: str = Form(...),
     confirmar_senha: str = Form(...),
@@ -220,46 +273,45 @@ def add_user(
         raise HTTPException(status_code=403, detail="Sem permissão")
 
     cpf_limpo = limpar_cpf(cpf)
+    pid = _parse_perfil_id(perfil_id)
+    perfil_row = _resolver_perfil(db, pid)
+    perfis_ctx = _perfis_disponiveis(db, pid)
+
+    def _error_response(errors):
+        form_data = _form_data_from_request(
+            nome, cpf, email, municipio_id, orgao_id, unidade_id, status, db, pid
+        )
+        return templates.TemplateResponse("user_form.html", {
+            "request": request, "user": None, "action": "add", "current_user": current_user,
+            "form_data": form_data, "errors": errors,
+            "perfis_disponiveis": perfis_ctx,
+            "selected_perfil_id": pid,
+        })
 
     if not validar_cpf(cpf_limpo):
-        form_data = _form_data_from_request(nome, cpf, email, municipio_id, orgao_id, unidade_id, perfil, status, db)
-        return templates.TemplateResponse("user_form.html", {
-            "request": request, "user": None, "action": "add", "current_user": current_user,
-            "form_data": form_data, "errors": ["CPF inválido. Verifique o número digitado."]
-        })
+        return _error_response(["CPF inválido. Verifique o número digitado."])
 
     if senha != confirmar_senha:
-        form_data = _form_data_from_request(nome, cpf, email, municipio_id, orgao_id, unidade_id, perfil, status, db)
-        return templates.TemplateResponse("user_form.html", {
-            "request": request, "user": None, "action": "add", "current_user": current_user,
-            "form_data": form_data, "errors": ["As senhas não coincidem."]
-        })
+        return _error_response(["As senhas não coincidem."])
 
     if len(senha) < 6:
-        form_data = _form_data_from_request(nome, cpf, email, municipio_id, orgao_id, unidade_id, perfil, status, db)
-        return templates.TemplateResponse("user_form.html", {
-            "request": request, "user": None, "action": "add", "current_user": current_user,
-            "form_data": form_data, "errors": ["A senha deve ter no mínimo 6 caracteres."]
-        })
+        return _error_response(["A senha deve ter no mínimo 6 caracteres."])
 
     if db.query(User).filter(User.cpf == cpf_limpo).first():
-        form_data = _form_data_from_request(nome, cpf, email, municipio_id, orgao_id, unidade_id, perfil, status, db)
-        return templates.TemplateResponse("user_form.html", {
-            "request": request, "user": None, "action": "add", "current_user": current_user,
-            "form_data": form_data, "errors": ["Este CPF já está cadastrado."]
-        })
+        return _error_response(["Este CPF já está cadastrado."])
 
     if db.query(User).filter(User.email == email).first():
-        form_data = _form_data_from_request(nome, cpf, email, municipio_id, orgao_id, unidade_id, perfil, status, db)
-        return templates.TemplateResponse("user_form.html", {
-            "request": request, "user": None, "action": "add", "current_user": current_user,
-            "form_data": form_data, "errors": ["Este e-mail já está cadastrado."]
-        })
+        return _error_response(["Este e-mail já está cadastrado."])
 
     if _is_admin_municipal(user_obj) and municipio_id != user_obj.municipio_id:
         raise HTTPException(status_code=403, detail="Você só pode criar usuários do seu município")
 
-    if perfil == PerfilEnum.MASTER.value and not _is_master(user_obj):
+    if not perfil_row or not perfil_row.ativo:
+        return _error_response(["Selecione um perfil válido."])
+
+    role_valor, vinculo_id = _role_e_vinculo(perfil_row)
+
+    if role_valor == PerfilEnum.MASTER.value and not _is_master(user_obj):
         raise HTTPException(status_code=403, detail="Apenas MASTER pode criar outros usuários MASTER")
 
     novo_usuario = User(
@@ -270,10 +322,11 @@ def add_user(
         municipio_id=municipio_id,
         orgao_id=orgao_id,
         unidade_id=unidade_id,
-        perfil=perfil,
+        perfil=role_valor,
         status=status,
+        perfil_personalizado_id=vinculo_id,
         created_by=user_obj.id
-)
+    )
 
     db.add(novo_usuario)
     db.commit()
@@ -281,7 +334,7 @@ def add_user(
     registrar_log(
         db,
         usuario=current_user,
-        acao=f"Cadastrou usuário {nome} (CPF: {cpf_limpo}, Perfil: {perfil})",
+        acao=f"Cadastrou usuário {nome} (CPF: {cpf_limpo}, Perfil: {perfil_row.nome})",
         ip=request.client.host
     )
 
@@ -329,7 +382,11 @@ def edit_user_form(
             "request": request,
             "user": user_to_edit,
             "action": "edit",
-            "current_user": current_user
+            "current_user": current_user,
+            "selected_perfil_id": _perfil_id_do_usuario(user_to_edit, db),
+            "perfis_disponiveis": _perfis_disponiveis(
+                db, user_to_edit.perfil_personalizado_id
+            ),
         }
     )
 
@@ -348,7 +405,7 @@ def edit_user(
     municipio_id: int = Form(...),
     orgao_id: int = Form(...),
     unidade_id: int = Form(...),
-    perfil: str = Form(...),
+    perfil_id: str = Form(...),
     status: str = Form(...),
     senha: str = Form(""),
     confirmar_senha: str = Form(""),
@@ -371,13 +428,23 @@ def edit_user(
     
     # ✅ Validações
     cpf_limpo = limpar_cpf(cpf)
-    form_data = _form_data_from_request(nome, cpf, email, municipio_id, orgao_id, unidade_id, perfil, status, db)
+    pid = _parse_perfil_id(perfil_id)
+    perfil_row = _resolver_perfil(db, pid)
+    perfis_ctx = _perfis_disponiveis(db, pid or user.perfil_personalizado_id)
+    form_data = _form_data_from_request(
+        nome, cpf, email, municipio_id, orgao_id, unidade_id, status, db, pid
+    )
 
-    if not validar_cpf(cpf_limpo):
+    def _error_response(errors):
         return templates.TemplateResponse("user_form.html", {
             "request": request, "user": user, "action": "edit", "current_user": current_user,
-            "form_data": form_data, "errors": ["CPF inválido. Verifique o número digitado."]
+            "form_data": form_data, "errors": errors,
+            "perfis_disponiveis": perfis_ctx,
+            "selected_perfil_id": pid,
         })
+
+    if not validar_cpf(cpf_limpo):
+        return _error_response(["CPF inválido. Verifique o número digitado."])
 
     # ✅ Verifica se CPF já existe (exceto o próprio usuário)
     cpf_existe = db.query(User).filter(
@@ -385,10 +452,7 @@ def edit_user(
         User.id != user_id
     ).first()
     if cpf_existe:
-        return templates.TemplateResponse("user_form.html", {
-            "request": request, "user": user, "action": "edit", "current_user": current_user,
-            "form_data": form_data, "errors": ["Este CPF já está cadastrado para outro usuário."]
-        })
+        return _error_response(["Este CPF já está cadastrado para outro usuário."])
 
     # ✅ Verifica se email já existe (exceto o próprio usuário)
     email_existe = db.query(User).filter(
@@ -396,23 +460,22 @@ def edit_user(
         User.id != user_id
     ).first()
     if email_existe:
-        return templates.TemplateResponse("user_form.html", {
-            "request": request, "user": user, "action": "edit", "current_user": current_user,
-            "form_data": form_data, "errors": ["Este e-mail já está cadastrado para outro usuário."]
-        })
+        return _error_response(["Este e-mail já está cadastrado para outro usuário."])
 
     # ✅ Valida senha (se fornecida)
     if senha:
         if senha != confirmar_senha:
-            return templates.TemplateResponse("user_form.html", {
-                "request": request, "user": user, "action": "edit", "current_user": current_user,
-                "form_data": form_data, "errors": ["As senhas não coincidem."]
-            })
+            return _error_response(["As senhas não coincidem."])
         if len(senha) < 6:
-            return templates.TemplateResponse("user_form.html", {
-                "request": request, "user": user, "action": "edit", "current_user": current_user,
-                "form_data": form_data, "errors": ["A senha deve ter no mínimo 6 caracteres."]
-            })
+            return _error_response(["A senha deve ter no mínimo 6 caracteres."])
+
+    if not perfil_row:
+        return _error_response(["Selecione um perfil válido."])
+
+    role_valor, vinculo_id = _role_e_vinculo(perfil_row)
+
+    if role_valor == PerfilEnum.MASTER.value and not _is_master(user_obj):
+        raise HTTPException(status_code=403, detail="Apenas MASTER pode atribuir perfil MASTER")
     
     # ✅ ATUALIZA CAMPOS
     user.nome = nome
@@ -421,8 +484,9 @@ def edit_user(
     user.municipio_id = municipio_id
     user.orgao_id = orgao_id
     user.unidade_id = unidade_id
-    user.perfil = perfil
+    user.perfil = role_valor
     user.status = status
+    user.perfil_personalizado_id = vinculo_id
     
     # ✅ Atualiza senha apenas se fornecida
     if senha:

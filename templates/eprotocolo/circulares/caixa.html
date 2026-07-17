@@ -1,0 +1,54 @@
+{% extends "eprotocolo/eprotocolo_base.html" %}
+
+{% block title %}Caixa de Circulares - E-Protocolo{% endblock %}
+
+{% block eprotocolo_content %}
+<div class="caixa-processos">
+    <div class="page-header">
+        <h1>Caixa de Circulares</h1>
+        <div class="font-size-controls">
+            <button type="button" class="font-btn" data-size="1" title="Texto menor">A</button>
+            <button type="button" class="font-btn" data-size="2" title="Texto normal">A⁻</button>
+            <button type="button" class="font-btn" data-size="3" title="Texto maior">A⁺</button>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <button type="button" class="btn-atualizar" onclick="location.reload()">
+                Atualizar <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+        <div class="toolbar-right">
+            <a href="/eprotocolo/circulares/criar" class="btn-novo">
+                <i class="fas fa-plus"></i> Nova Circular
+            </a>
+        </div>
+    </div>
+
+    <div class="lista-processos">
+        {% if circulares %}
+            {% for c in circulares %}
+            <div class="processo-card">
+                <div class="processo-main">
+                    <div class="processo-numero">
+                        <span class="numero-link">{{ c.numero or ('#' ~ c.id) }}</span>
+                    </div>
+                    <div class="processo-info">
+                        <div class="processo-assunto">{{ c.assunto or 'Sem assunto' }}</div>
+                        <div class="processo-meta">
+                            <span>{{ c.created_at.strftime('%d/%m/%Y %H:%M') if c.created_at else '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <p>Nenhuma circular na caixa.</p>
+            <a href="/eprotocolo/circulares/criar" class="btn-novo">Criar nova circular</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
