@@ -1,0 +1,38 @@
+{% extends "eprotocolo/eprotocolo_base.html" %}
+
+{% block title %}Circulares Arquivadas - E-Protocolo{% endblock %}
+
+{% block eprotocolo_content %}
+<div class="historico-unidade">
+    <div class="page-badge">CIRCULARES ARQUIVADAS</div>
+
+    <div class="historico-table-wrapper">
+        <table class="historico-table">
+            <thead>
+                <tr>
+                    <th>N° CIRCULAR</th>
+                    <th>ASSUNTO</th>
+                    <th>DATA</th>
+                    <th>SITUAÇÃO</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if circulares %}
+                    {% for c in circulares %}
+                    <tr>
+                        <td class="col-numero">{{ c.numero or ('#' ~ c.id) }}</td>
+                        <td class="col-assunto">{{ c.assunto or '-' }}</td>
+                        <td class="col-data">{{ c.created_at.strftime('%d/%m/%Y %H:%M') if c.created_at else '-' }}</td>
+                        <td class="col-situacao"><span class="badge-visualizado">Arquivada</span></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="4" class="empty-row">Nenhuma circular arquivada encontrada.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

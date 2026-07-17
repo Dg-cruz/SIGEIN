@@ -197,11 +197,28 @@
   </div>
 </div>
 
+<script type="application/json" id="abas-equipamento-json">{{ abas_equipamento|tojson }}</script>
+<script type="application/json" id="itens-iniciais-json">{{ (form_data.itens if form_data else [])|tojson }}</script>
+<span id="cautela-data" data-cautela-id="{{ cautela.id if cautela else '' }}" hidden></span>
+
 <script>
 (function () {
-  var ABAS = {{ abas_equipamento|tojson }};
-  var initialItens = {{ (form_data.itens if form_data else [])|tojson }};
-  var cautelaId = {{ cautela.id if cautela else 'null' }};
+  function readJson(id, fallback) {
+    var el = document.getElementById(id);
+    if (!el || !el.textContent.trim()) return fallback;
+    try {
+      return JSON.parse(el.textContent);
+    } catch (err) {
+      return fallback;
+    }
+  }
+
+  var ABAS = readJson("abas-equipamento-json", []);
+  var initialItens = readJson("itens-iniciais-json", []);
+  var cautelaData = document.getElementById("cautela-data");
+  var cautelaId = cautelaData && cautelaData.dataset.cautelaId
+    ? parseInt(cautelaData.dataset.cautelaId, 10)
+    : null;
   var servidorInput = document.getElementById("servidor-busca");
   var servidorIdInput = document.getElementById("servidor_id");
   var servidorList = document.getElementById("servidor-list");

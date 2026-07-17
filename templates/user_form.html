@@ -99,16 +99,18 @@
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="perfil">Perfil*</label>
-                    <select name="perfil" id="perfil" required onchange="mostrarDescricaoPerfil()">
+                    <label for="perfil_id">Perfil*</label>
+                    <select name="perfil_id" id="perfil_id" required onchange="mostrarDescricaoPerfil()">
                         <option value="">-- Selecione --</option>
-                        <option value="master" {% if (form_data and form_data.perfil == 'master') or (user and user.perfil|enum_value == 'master') %}selected{% endif %}>MASTER - Acesso Total ao Sistema</option>
-                        <option value="admin_municipal" {% if (form_data and form_data.perfil == 'admin_municipal') or (user and user.perfil|enum_value == 'admin_municipal') %}selected{% endif %}>ADMIN MUNICIPAL - Gerencia Município Completo</option>
-                        <option value="gestor_estoque" {% if (form_data and form_data.perfil == 'gestor_estoque') or (user and user.perfil|enum_value == 'gestor_estoque') %}selected{% endif %}>GESTOR DE ESTOQUE - Gerencia Inventário</option>
-                        <option value="gestor_protocolo" {% if (form_data and form_data.perfil == 'gestor_protocolo') or (user and user.perfil|enum_value == 'gestor_protocolo') %}selected{% endif %}>GESTOR DE PROTOCOLO - Gerencia E-Protocolo</option>
-                        <option value="gestor_geral" {% if (form_data and form_data.perfil == 'gestor_geral') or (user and user.perfil|enum_value == 'gestor_geral') %}selected{% endif %}>GESTOR GERAL - Estoque + Protocolo</option>
-                        <option value="gestor_segem" {% if (form_data and form_data.perfil == 'gestor_segem') or (user and user.perfil|enum_value == 'gestor_segem') %}selected{% endif %}>GESTOR SEGEM - Módulo SEGEM</option>
-                        <option value="operador" {% if (form_data and form_data.perfil == 'operador') or (user and user.perfil|enum_value == 'operador') %}selected{% endif %}>OPERADOR - Acesso Básico</option>
+                        {% for pp in perfis_disponiveis or [] %}
+                        <option value="{{ pp.id }}"
+                                data-codigo="{{ pp.codigo or '' }}"
+                                data-descricao="{{ (pp.descricao or '')|e }}"
+                          {% if (form_data and form_data.perfil_id|string == pp.id|string)
+                             or (not form_data and selected_perfil_id and selected_perfil_id == pp.id) %}selected{% endif %}>
+                          {{ pp.nome }}{% if pp.is_sistema %} (sistema){% endif %}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -460,22 +462,15 @@ async function carregarUnidades() {
 // DESCRIÇÃO DO PERFIL
 // ========================================
 function mostrarDescricaoPerfil() {
-    const perfil = document.getElementById('perfil').value;
+    const select = document.getElementById('perfil_id');
     const infoDiv = document.getElementById('perfil-info');
     const descricao = document.getElementById('perfil-descricao');
-    
-    const descricoes = {
-        'master': '✅ Acesso total ao sistema | Gerencia múltiplos municípios | Configurações globais',
-        'admin_municipal': '✅ Acesso total ao município | Gerencia usuários | Inventário + Protocolo completo',
-        'gestor_estoque': '✅ Acesso total ao inventário do órgão | Gera relatórios | NÃO acessa protocolo',
-        'gestor_protocolo': '✅ Acesso total ao protocolo | Cria e tramita processos | NÃO acessa inventário',
-        'gestor_geral': '✅ Combina Estoque + Protocolo | Visão 360° do órgão | NÃO gerencia usuários',
-        'gestor_segem': '✅ Acesso ao módulo SEGEM (gestão de materiais) | Apenas Master e Gestor SEGEM visualizam',
-        'operador': '⚠️ Acesso básico | Consulta e ações limitadas | Não pode criar/editar/excluir'
-    };
-    
-    if (perfil && descricoes[perfil]) {
-        descricao.textContent = descricoes[perfil];
+    if (!select || !infoDiv || !descricao) return;
+
+    const opt = select.options[select.selectedIndex];
+    const texto = opt && opt.dataset ? (opt.dataset.descricao || '') : '';
+    if (select.value && texto) {
+        descricao.textContent = texto;
         infoDiv.style.display = 'block';
     } else {
         infoDiv.style.display = 'none';

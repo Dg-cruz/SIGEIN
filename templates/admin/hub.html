@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% set hide_app_header = True %}
+
+{% block title %}Administração — SIGEIN{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}">
+
+<style>
+  .dashboard-page--admin .admin-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.15rem;
+  }
+  .dashboard-page--admin .access-card--admin {
+    min-height: 108px;
+    padding: 1.25rem 1.35rem;
+    border-width: 1.5px;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+  }
+  .dashboard-page--admin .access-card--admin .access-card__icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    font-size: 1.25rem;
+  }
+  .dashboard-page--admin .access-card--admin .access-card__text strong {
+    font-size: 1.05rem;
+  }
+  .dashboard-page--admin .access-card--admin .access-card__text small {
+    font-size: 0.82rem;
+    margin-top: 0.3rem;
+  }
+  .dashboard-page--admin .admin-section-title {
+    color: #004080;
+    margin: 0 0 1.15rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+  @media (max-width: 768px) {
+    .dashboard-page--admin .admin-menu-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="dashboard-page dashboard-page--admin">
+
+  <header class="dash-header">
+    <div class="dash-header__greeting">
+      <h1>Administração</h1>
+      <p>Olá{% if user_display %}, {{ user_display }}{% endif %} — cadastros, perfis e configurações do sistema.</p>
+    </div>
+    <div class="dash-header__meta">
+      <span class="dash-pill dash-pill--live">Sistema online</span>
+      <span class="dash-pill">Atualizado agora</span>
+    </div>
+  </header>
+
+  <section class="quick-access" aria-label="Menus de Administração">
+    <h3 class="admin-section-title">Acesso aos cadastros</h3>
+    <div class="admin-menu-grid">
+      {% for card in cards %}
+      <a href="{{ card.href }}" class="access-card access-card--row access-card--admin">
+        <span class="access-card__icon"><i class="fas {{ card.icon }}" aria-hidden="true"></i></span>
+        <span class="access-card__text">
+          <strong>{{ card.title }}</strong>
+          <small>{{ card.subtitle }}</small>
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set hide_app_header = True %}
+
+{% block title %}{{ 'Editar' if action == 'edit' else 'Novo' }} perfil — Administração{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/module-form.css') }}">
+
+<div class="container">
+  <h2>{{ 'Editar' if action == 'edit' else 'Cadastrar' }} perfil</h2>
+
+  {% if errors %}
+  <div class="form-error">
+    {% for e in errors %}<div>{{ e }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post"
+        action="{% if action == 'edit' %}/admin/perfis/edit/{{ perfil.id }}{% else %}/admin/perfis/add{% endif %}">
+    <fieldset>
+      <legend>Dados do perfil</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nome">Nome *</label>
+          <input type="text" id="nome" name="nome" required maxlength="120"
+                 placeholder="Ex: Operador de Paiol"
+                 value="{% if form_data %}{{ form_data.nome }}{% elif perfil %}{{ perfil.nome }}{% endif %}">
+        </div>
+        <div class="form-group form-group--check" style="justify-content:flex-end; padding-bottom:0.35rem;">
+          <label>
+            <input type="checkbox" name="ativo" value="true"
+              {% if form_data %}
+                {% if form_data.ativo %}checked{% endif %}
+              {% elif not perfil or perfil.ativo %}
+                checked
+              {% endif %}>
+            Perfil ativo
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="descricao">Descrição</label>
+          <textarea id="descricao" name="descricao" rows="3"
+                    placeholder="Resumo das responsabilidades deste perfil">{% if form_data %}{{ form_data.descricao }}{% elif perfil %}{{ perfil.descricao or '' }}{% endif %}</textarea>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="buttons">
+      <button type="submit" class="btn-submit">{{ 'Atualizar' if action == 'edit' else 'Salvar' }}</button>
+      <a href="/admin/perfis" class="btn-cancel">Cancelar</a>
+      {% if action == 'edit' and perfil %}
+      <a href="/admin/modulos/{{ perfil.id }}" class="btn-cancel">Permissões de módulos</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -534,14 +534,29 @@
 
             <div class="sidebar__section">
                 <span class="sidebar__label">Cadastros</span>
-                <div class="sidebar-submenu{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') or path.startswith('/admin/geografia') %} open{% endif %}" id="sidebarAdmin">
-                    <button type="button" class="sidebar-submenu__btn" aria-expanded="{% if path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') or path.startswith('/admin/geografia') %}true{% else %}false{% endif %}">
-                        <i class="fas fa-sliders nav-icon"></i>
-                        <span>Administração</span>
-                        <i class="fas fa-chevron-down sidebar-submenu__caret"></i>
-                    </button>
+                {% set admin_open = path == '/admin' or path.startswith('/admin/') or path.startswith('/equipment-types') or path.startswith('/brands') or path.startswith('/states') or path.startswith('/categories') or path.startswith('/orgaos') %}
+                <div class="sidebar-submenu sidebar-submenu--nav{% if admin_open %} open{% endif %}{% if admin_open %} has-active{% endif %}" id="sidebarAdmin">
+                    <div class="sidebar-submenu__head">
+                        <a href="/admin" class="sidebar-submenu__link{% if path == '/admin' or path == '/admin/' %} is-active{% endif %}" title="Administração">
+                            <i class="fas fa-sliders nav-icon"></i>
+                            <span>Administração</span>
+                        </a>
+                        <button type="button" class="sidebar-submenu__toggle" aria-expanded="{% if admin_open %}true{% else %}false{% endif %}" aria-label="Expandir Administração">
+                            <i class="fas fa-chevron-down sidebar-submenu__caret"></i>
+                        </button>
+                    </div>
                     <div class="sidebar-submenu__content">
                         <div class="sidebar-submenu__inner">
+                            {% if perfil_atual in ['master', 'admin_municipal'] %}
+                            <a href="/admin/perfis" class="sidebar-nav__link{% if path.startswith('/admin/perfis') %} is-active{% endif %}">
+                                <i class="fas fa-user-shield nav-icon"></i>
+                                <span>Perfis</span>
+                            </a>
+                            <a href="/admin/modulos" class="sidebar-nav__link{% if path.startswith('/admin/modulos') %} is-active{% endif %}">
+                                <i class="fas fa-table-cells nav-icon"></i>
+                                <span>Módulos</span>
+                            </a>
+                            {% endif %}
                             <a href="/categories" class="sidebar-nav__link{% if path.startswith('/categories') %} is-active{% endif %}">
                                 <i class="fas fa-folder nav-icon"></i>
                                 <span>Categorias</span>
