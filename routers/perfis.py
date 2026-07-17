@@ -17,12 +17,19 @@ def _perfil_valor(user: User) -> str:
     return user._perfil_valor()
 
 
-def _require_admin(user_email: str | None, db: Session):
+def _require_login(user_email: str | None, db: Session):
     if not user_email:
         return None, RedirectResponse("/login")
     user_obj = db.query(User).filter(User.email == user_email).first()
     if not user_obj:
         return None, RedirectResponse("/login")
+    return user_obj, None
+
+
+def _require_admin(user_email: str | None, db: Session):
+    user_obj, deny = _require_login(user_email, db)
+    if deny:
+        return None, deny
     if _perfil_valor(user_obj) not in (
         PerfilEnum.MASTER.value,
         PerfilEnum.ADMIN_MUNICIPAL.value,
@@ -32,6 +39,106 @@ def _require_admin(user_email: str | None, db: Session):
             status_code=403,
         )
     return user_obj, None
+
+
+# ========================================
+# HUB ADMINISTRAÇÃO
+# ========================================
+
+@router.get("")
+@router.get("/")
+def admin_hub(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    user_obj, deny = _require_login(user, db)
+    if deny:
+        return deny
+
+    perfil = _perfil_valor(user_obj)
+    is_admin = perfil in (
+        PerfilEnum.MASTER.value,
+        PerfilEnum.ADMIN_MUNICIPAL.value,
+    )
+    cards = []
+    if is_admin:
+        cards.extend(
+            [
+                {
+                    "title": "Perfis",
+                    "subtitle": "Cadastro de perfis do sistema e personalizados",
+                    "href": "/admin/perfis",
+                    "icon": "fa-user-shield",
+                },
+                {
+                    "title": "Módulos",
+                    "subtitle": "Permissões por módulo e ação de cada perfil",
+                    "href": "/admin/modulos",
+                    "icon": "fa-table-cells",
+                },
+            ]
+        )
+    cards.extend(
+        [
+            {
+                "title": "Categorias",
+                "subtitle": "Categorias de produtos e equipamentos",
+                "href": "/categories",
+                "icon": "fa-folder",
+            },
+            {
+                "title": "Tipos de equipamento",
+                "subtitle": "Tipos vinculados às categorias",
+                "href": "/equipment-types",
+                "icon": "fa-laptop",
+            },
+            {
+                "title": "Marcas",
+                "subtitle": "Marcas por tipo de equipamento",
+                "href": "/brands",
+                "icon": "fa-tag",
+            },
+            {
+                "title": "Estados",
+                "subtitle": "Estados de conservação / situação",
+                "href": "/states",
+                "icon": "fa-circle-check",
+            },
+            {
+                "title": "Órgãos",
+                "subtitle": "Órgãos vinculados a municípios",
+                "href": "/orgaos",
+                "icon": "fa-landmark",
+            },
+        ]
+    )
+    if perfil == PerfilEnum.MASTER.value:
+        cards.append(
+            {
+                "title": "Geografia IBGE",
+                "subtitle": "Estados e municípios (sincronização IBGE)",
+                "href": "/admin/geografia",
+                "icon": "fa-map-location-dot",
+            }
+        )
+
+    user_display = (
+        user_obj.nome.split()[0]
+        if getattr(user_obj, "nome", None)
+        else (user or "")
+    )
+
+    return templates.TemplateResponse(
+        "admin/hub.html",
+        {
+            "request": request,
+            "user": user,
+            "user_display": user_display,
+            "hide_app_header": True,
+            "cards": cards,
+        },
+    )
 
 
 # ========================================
